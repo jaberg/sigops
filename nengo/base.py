@@ -1,15 +1,6 @@
 import numpy as np
 
 
-class DuplicateFilter(Exception):
-    """A signal appears as `newsig` in multiple filters.
-
-    This is ambiguous because at simulation time, a filter means
-
-        signals[newsig] <- alpha * signals[oldsig]
-    """
-
-
 class Signal(object):
     def __init__(self, n=1):
         self.n = n
