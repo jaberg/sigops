@@ -1,3 +1,8 @@
+"""
+simulator.py: Simple reference simulator for base.Model
+
+"""
+
 import numpy as np
 
 class Simulator(object):
@@ -18,6 +23,7 @@ class Simulator(object):
             self.signals_copy[sig] = np.zeros(sig.n)
 
     def step(self):
+        # -- copy: signals -> signals_copy
         for sig in self.model.signals:
             self.signals_copy[sig] = 1.0 * self.signals[sig]
 
@@ -36,7 +42,7 @@ class Simulator(object):
 
         # -- customs: signals -> signals
         for ct in self.model.custom_transforms:
-            self.signals[ct.outsig] = ct.func(self.signals[ct.insig])
+            self.signals[ct.outsig][...] = ct.func(self.signals[ct.insig])
 
         self.n_steps += 1
 
