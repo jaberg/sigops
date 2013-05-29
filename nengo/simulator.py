@@ -1,3 +1,8 @@
+"""
+simulator.py: Simple reference simulator for base.Model
+
+"""
+
 import numpy as np
 
 class Simulator(object):
@@ -22,6 +27,7 @@ class Simulator(object):
             self.probe_outputs[probe] = []
 
     def step(self):
+        # -- copy: signals -> signals_copy
         for sig in self.model.signals:
             self.signals_copy[sig] = 1.0 * self.signals[sig]
 
@@ -40,13 +46,14 @@ class Simulator(object):
 
         # -- customs: signals -> signals
         for ct in self.model.custom_transforms:
-            self.signals[ct.outsig] = ct.func(self.signals[ct.insig])
+            self.signals[ct.outsig][...] = ct.func(self.signals[ct.insig])
 
         # -- probes signals -> probe buffers
         for probe in self.model.signal_probes:
             period = int(probe.dt / self.model.dt)
             if self.n_steps % period == 0:
-                self.probe_outputs[probe].append(self.signals[probe.sig].copy())
+                tmp = self.signals[probe.sig].copy()
+                self.probe_outputs[probe].append(tmp)
 
         self.n_steps += 1
 
