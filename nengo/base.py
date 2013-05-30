@@ -143,14 +143,6 @@ class Transform(object):
         self.outsig = outsig
 
 
-class CustomTransform(object):
-    """An arbitrary transform from a decoded signal to the signals buffer"""
-    def __init__(self, func, insig, outsig):
-        self.func = func
-        self.insig = insig
-        self.outsig = outsig
-
-
 class Filter(object):
     """A linear transform from signals[t-1] to signals[t]"""
     def __init__(self, alpha, oldsig, newsig):
@@ -167,7 +159,7 @@ class Filter(object):
         return str(self)
 
 
-class Model(object):
+class SimModel(object):
     """
     A container for model components.
     """
@@ -176,7 +168,6 @@ class Model(object):
         self.signals = []
         self.transforms = []
         self.filters = []
-        self.custom_transforms = []
 
     def signal(self, n=1, value=None):
         """Add a signal to the model"""
@@ -197,10 +188,4 @@ class Model(object):
         """Add a filter to the model"""
         rval = Filter(alpha, oldsig, newsig)
         self.filters.append(rval)
-        return rval
-
-    def custom_transform(self, func, insig, outsig):
-        """Add a custom transform to the model"""
-        rval = CustomTransform(func, insig, outsig)
-        self.custom_transforms.append(rval)
         return rval
