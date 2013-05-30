@@ -81,11 +81,6 @@ class Simulator(object):
                 tf.alpha,
                 get_signal(self.signals_tmp, tf.insig))
 
-        # -- customs: signals -> signals
-        for ct in self.model.custom_transforms:
-            get_signal(self.signals, ct.outsig)[...] = ct.func(
-                get_signal(self.signals, ct.insig))
-
         self.n_steps += 1
 
     def run_steps(self, N, verbose=False):
