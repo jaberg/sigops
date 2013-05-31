@@ -86,11 +86,6 @@ class Simulator(object):
                 tf.alpha,
                 get_signal(self.signals_tmp, tf.insig))
 
-        # -- customs: signals -> signals
-        for ct in self.model.custom_transforms:
-            get_signal(self.signals, ct.outsig)[...] = ct.func(
-                get_signal(self.signals, ct.insig))
-
         # -- probes signals -> probe buffers
         for probe in self.model.signal_probes:
             period = int(probe.dt / self.model.dt)
