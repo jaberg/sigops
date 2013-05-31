@@ -22,6 +22,15 @@ class Simulator(object):
             self.signals_tmp[sig] = np.zeros(sig.n)
             self.signals_copy[sig] = np.zeros(sig.n)
 
+    def get_signal(self, signals_dct, obj):
+        if obj in signals_dct:
+            return signals_dct
+        elif obj.base in signals_dct:
+            base = signals_dct[obj.base]
+            raise base.TODO('fetch view')
+        else:
+            raise TypeError()
+
     def step(self):
         # -- copy: signals -> signals_copy
         for sig in self.model.signals:
