@@ -5,6 +5,37 @@ simulator.py: Simple reference simulator for base.Model
 
 import numpy as np
 
+def get_signal(signals_dct, obj):
+    # look up a Signal or SignalView
+    # in a `signals_dct` such as self.signals
+    if obj in signals_dct:
+        return signals_dct[obj]
+    elif obj.base in signals_dct:
+        base_array = signals_dct[obj.base]
+        try:
+            # wtf?
+            itemsize = int(obj.dtype.itemsize)
+        except TypeError:
+            itemsize = int(obj.dtype().itemsize)
+        byteoffset = itemsize * obj.offset
+        bytestrides = [itemsize * s for s in obj.elemstrides]
+        view = np.ndarray(shape=obj.shape,
+                          dtype=obj.dtype,
+                          buffer=base_array.data,
+                          offset=byteoffset,
+                          strides=bytestrides,
+                         )
+        view[...]
+        return view
+    else:
+        raise TypeError()
+
+
+def zero_array_dct(dct):
+    for arr in dct.values():
+        arr[...] = 0
+
+
 class Simulator(object):
     def __init__(self, model):
         self.model = model
@@ -26,43 +57,45 @@ class Simulator(object):
         for probe in self.model.signal_probes:
             self.probe_outputs[probe] = []
 
-    def get_signal(self, signals_dct, obj):
-        if obj in signals_dct:
-            return signals_dct
-        elif obj.base in signals_dct:
-            base = signals_dct[obj.base]
-            raise base.TODO('fetch view')
-        else:
-            raise TypeError()
-
 
     def step(self):
+        zero_array_dct(self.signals_tmp)
+
         # -- copy: signals -> signals_copy
         for sig in self.model.signals:
-            self.signals_copy[sig] = 1.0 * self.signals[sig]
-
-        # -- reset: 0 -> signals
-        for sig in self.model.signals:
-            self.signals[sig][...] = 0
+            self.signals_copy[sig][...] = self.signals[sig]
 
         # -- filters: signals_copy -> signals
+        zero_array_dct(self.signals)
         for filt in self.model.filters:
             new, old = filt.newsig, filt.oldsig
-            self.signals[new] += filt.alpha * self.signals_copy[old]
+            inc =  np.dot(filt.alpha, get_signal(self.signals_copy, old))
+            targ = get_signal(self.signals, new)
+            # -- we check for size mismatch,
+            #    because incrementing scalar to len-1 arrays is ok
+            #    if the shapes are not compatible, we'll get a
+            #    problem in targ[...] += inc
+            if inc.size != targ.size:
+                raise ValueError('shape mismatch in filter',
+                                 (filt, inc.shape, targ.shape))
+            targ[...] += inc
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
-            self.signals[tf.outsig] += tf.alpha * self.signals_tmp[tf.insig]
+            get_signal(self.signals, tf.outsig)[...] += np.dot(
+                tf.alpha,
+                get_signal(self.signals_tmp, tf.insig))
 
         # -- customs: signals -> signals
         for ct in self.model.custom_transforms:
-            self.signals[ct.outsig][...] = ct.func(self.signals[ct.insig])
+            get_signal(self.signals, ct.outsig)[...] = ct.func(
+                get_signal(self.signals, ct.insig))
 
         # -- probes signals -> probe buffers
         for probe in self.model.signal_probes:
             period = int(probe.dt / self.model.dt)
             if self.n_steps % period == 0:
-                tmp = self.signals[probe.sig].copy()
+                tmp = get_signal(self.signals, probe.sig).copy()
                 self.probe_outputs[probe].append(tmp)
 
         self.n_steps += 1
