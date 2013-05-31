@@ -179,7 +179,7 @@ class Model(object):
     """
     A container for model components.
     """
-    def __init__(self, dt):
+    def __init__(self, dt=0.001):
         self.dt = dt
         self.signals = []
         self.transforms = []
