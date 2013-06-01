@@ -7,7 +7,7 @@ def test_signal_indexing_1():
     m = SimModel()
     one = m.signal(1)
     two = m.signal(2)
-    three = m.signal(3, value=[1, 2, 3])
+    three = m.signal(3, value=np.asarray([1, 2, 3], 'float64'))
 
     m.filter(1, three[0], one)
     m.filter(2.0, three[1:], two)
