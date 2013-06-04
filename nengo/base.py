@@ -132,7 +132,9 @@ class Constant(Signal):
     """A signal meant to hold a fixed value"""
     def __init__(self, n, value):
         Signal.__init__(self, n)
-        self.value = value
+        self.value = np.asarray(value)
+        # TODO: change constructor to get n from value
+        assert self.value.size == n
 
 
 class Transform(object):
@@ -180,12 +182,16 @@ class SimModel(object):
 
     def transform(self, alpha, insig, outsig):
         """Add a transform to the model"""
+        if hasattr(outsig, 'value'):
+            raise TypeError('transform destination is constant')
         rval = Transform(alpha, insig, outsig)
         self.transforms.append(rval)
         return rval
 
     def filter(self, alpha, oldsig, newsig):
         """Add a filter to the model"""
+        if hasattr(newsig, 'value'):
+            raise TypeError('filter destination is constant')
         rval = Filter(alpha, oldsig, newsig)
         self.filters.append(rval)
         return rval
