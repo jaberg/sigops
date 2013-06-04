@@ -36,6 +36,20 @@ def zero_array_dct(dct):
         arr[...] = 0
 
 
+def dot_inc(a, b, targ):
+    # -- we check for size mismatch,
+    #    because incrementing scalar to len-1 arrays is ok
+    #    if the shapes are not compatible, we'll get a
+    #    problem in targ[...] += inc
+    inc =  np.dot(a, b)
+    if inc.shape != targ.shape:
+        if inc.size == targ.size == 1:
+            inc = np.asarray(inc).reshape(targ.shape)
+        else:
+            raise ValueError('shape mismatch', (inc.shape, targ.shape))
+    targ[...] += inc
+
+
 class Simulator(object):
     def __init__(self, model):
         self.model = model
@@ -54,35 +68,29 @@ class Simulator(object):
             self.signals_copy[sig] = np.zeros(sig.n)
 
     def step(self):
+        # -- reset: 0 -> signals_tmp
         zero_array_dct(self.signals_tmp)
 
         # -- copy: signals -> signals_copy
         for sig in self.model.signals:
             self.signals_copy[sig][...] = self.signals[sig]
 
-        # -- filters: signals_copy -> signals
+        # -- reset: 0 -> signals
         zero_array_dct(self.signals)
+
+
+        # -- filters: signals_copy -> signals
         for filt in self.model.filters:
-            new, old = filt.newsig, filt.oldsig
-            inc =  np.dot(filt.alpha, get_signal(self.signals_copy, old))
-            targ = get_signal(self.signals, new)
-            # -- we check for size mismatch,
-            #    because incrementing scalar to len-1 arrays is ok
-            #    if the shapes are not compatible, we'll get a
-            #    problem in targ[...] += inc
-            if inc.shape != targ.shape:
-                if inc.size == targ.size == 1:
-                    inc = np.asarray(inc).reshape(targ.shape)
-                else:
-                    raise ValueError('shape mismatch in filter',
-                        (filt, inc.shape, targ.shape))
-            targ[...] += inc
+            dot_inc(filt.alpha,
+                    get_signal(self.signals_copy, filt.oldsig),
+                    get_signal(self.signals, filt.newsig))
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
-            get_signal(self.signals, tf.outsig)[...] += np.dot(
-                tf.alpha,
-                get_signal(self.signals_tmp, tf.insig))
+            dot_inc(tf.alpha,
+                    get_signal(self.signals_tmp, tf.insig),
+                    get_signal(self.signals, tf.outsig))
+
 
         self.n_steps += 1
 
