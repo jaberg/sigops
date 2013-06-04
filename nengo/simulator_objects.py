@@ -130,7 +130,7 @@ class Signal(SignalView):
         return self
 
 
-class SignalProbe(object):
+class Probe(object):
     """A model probe to record a signal"""
     def __init__(self, sig, dt):
         self.sig = sig
@@ -144,10 +144,11 @@ class Constant(Signal):
         self.value = value
 
 
-class CustomComputation(object):
-    """A custom computation. Implements the same interface as populations."""
-    def __init__(self, func):
-        self.func = func
+class Nonlinearity(object):
+    def __init__(self, input_signal, output_signal, bias_signal):
+        self.input_signal = input_signal
+        self.output_signal = output_signal
+        self.bias_signal = bias_signal
 
 
 class Transform(object):
@@ -183,7 +184,7 @@ class SimModel(object):
         self.signals = []
         self.transforms = []
         self.filters = []
-        self.signal_probes = []
+        self.probes = []
 
     def signal(self, n=1, value=None):
         """Add a signal to the model"""
@@ -194,10 +195,10 @@ class SimModel(object):
         self.signals.append(rval)
         return rval
 
-    def signal_probe(self, sig, dt):
-        """Add a signal probe to the model"""
-        rval = SignalProbe(sig, dt)
-        self.signal_probes.append(rval)
+    def probe(self, sig, dt):
+        """Add a probe to the model"""
+        rval = Probe(sig, dt)
+        self.probes.append(rval)
         return rval
 
     def transform(self, alpha, insig, outsig):
