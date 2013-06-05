@@ -31,11 +31,6 @@ def get_signal(signals_dct, obj):
         raise TypeError()
 
 
-def zero_array_dct(dct):
-    for arr in dct.values():
-        arr[...] = 0
-
-
 def dot_inc(a, b, targ):
     # -- we check for size mismatch,
     #    because incrementing scalar to len-1 arrays is ok
@@ -58,26 +53,33 @@ class Simulator(object):
         self.signals = {}
         self.signals_tmp = {}
         self.signals_copy = {}
+        self.constant_signals = []
+        self.dynamic_signals = []
 
         for sig in self.model.signals:
             if hasattr(sig, 'value'):
                 self.signals[sig] = np.asarray(sig.value)
+                self.signals_tmp[sig] = np.asarray(sig.value)
+                self.signals_copy[sig] = np.asarray(sig.value)
+                self.constant_signals.append(sig)
             else:
                 self.signals[sig] = np.zeros(sig.n)
-            self.signals_tmp[sig] = np.zeros(sig.n)
-            self.signals_copy[sig] = np.zeros(sig.n)
+                self.signals_tmp[sig] = np.zeros(sig.n)
+                self.signals_copy[sig] = np.zeros(sig.n)
+                self.dynamic_signals.append(sig)
 
     def step(self):
         # -- reset: 0 -> signals_tmp
-        zero_array_dct(self.signals_tmp)
+        for sig in self.dynamic_signals:
+            self.signals_tmp[sig][...] = 0
 
         # -- copy: signals -> signals_copy
-        for sig in self.model.signals:
+        for sig in self.dynamic_signals:
             self.signals_copy[sig][...] = self.signals[sig]
 
         # -- reset: 0 -> signals
-        zero_array_dct(self.signals)
-
+        for sig in self.dynamic_signals:
+            self.signals[sig][...] = 0
 
         # -- filters: signals_copy -> signals
         for filt in self.model.filters:
@@ -90,7 +92,6 @@ class Simulator(object):
             dot_inc(tf.alpha,
                     get_signal(self.signals_tmp, tf.insig),
                     get_signal(self.signals, tf.outsig))
-
 
         self.n_steps += 1
 
