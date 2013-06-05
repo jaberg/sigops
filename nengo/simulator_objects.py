@@ -156,17 +156,31 @@ class Constant(Signal):
 class Transform(object):
     """A linear transform from a decoded signal to the signals buffer"""
     def __init__(self, alpha, insig, outsig):
-        self.alpha = alpha
+        alpha = np.asarray(alpha)
+        if hasattr(outsig, 'value'):
+            raise TypeError('transform destination is constant')
+        self.alpha_signal = Constant(n=alpha.size, value=alpha)
         self.insig = insig
         self.outsig = outsig
+
+    @property
+    def alpha(self):
+        return self.alpha_signal.value
+
+    @alpha.setter
+    def alpha(self, value):
+        self.alpha_signal.value[...] = value
 
 
 class Filter(object):
     """A linear transform from signals[t-1] to signals[t]"""
     def __init__(self, alpha, oldsig, newsig):
+        if hasattr(newsig, 'value'):
+            raise TypeError('filter destination is constant')
+        alpha = np.asarray(alpha)
+        self.alpha_signal = Constant(n=alpha.size, value=alpha)
         self.oldsig = oldsig
         self.newsig = newsig
-        self.alpha = alpha
 
     def __str__(self):
         return '%s{%s, %s, %s}' % (
@@ -176,6 +190,13 @@ class Filter(object):
     def __repr__(self):
         return str(self)
 
+    @property
+    def alpha(self):
+        return self.alpha_signal.value
+
+    @alpha.setter
+    def alpha(self, value):
+        self.alpha_signal.value[...] = value
 
 class SimModel(object):
     """
@@ -198,16 +219,16 @@ class SimModel(object):
 
     def transform(self, alpha, insig, outsig):
         """Add a transform to the model"""
-        if hasattr(outsig, 'value'):
-            raise TypeError('transform destination is constant')
         rval = Transform(alpha, insig, outsig)
+        if rval.alpha_signal not in self.signals:
+            self.signals.append(rval.alpha_signal)
         self.transforms.append(rval)
         return rval
 
     def filter(self, alpha, oldsig, newsig):
         """Add a filter to the model"""
-        if hasattr(newsig, 'value'):
-            raise TypeError('filter destination is constant')
         rval = Filter(alpha, oldsig, newsig)
+        if rval.alpha_signal not in self.signals:
+            self.signals.append(rval.alpha_signal)
         self.filters.append(rval)
         return rval
