@@ -87,9 +87,13 @@ class Simulator(object):
 
         # -- filters: signals_copy -> signals
         for filt in self.model.filters:
-            dot_inc(filt.alpha,
-                    get_signal(self.signals_copy, filt.oldsig),
-                    get_signal(self.signals, filt.newsig))
+            try:
+                dot_inc(filt.alpha,
+                        get_signal(self.signals_copy, filt.oldsig),
+                        get_signal(self.signals, filt.newsig))
+            except Exception, e:
+                e.args = e.args + (filt.oldsig, filt.newsig)
+                raise
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
