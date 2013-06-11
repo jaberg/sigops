@@ -31,6 +31,14 @@ class SignalView(object):
     def __len__(self):
         return self.shape[0]
 
+    def __str__(self):
+        return "View of " + str(self.base)
+
+    def __repr__(self):
+        args = ', '.join([repr(a) for a in (self.base, self.shape,
+                                            self.elemstrides, self.offset)])
+        return "SignalView(" + args + ")"
+
     @property
     def dtype(self):
         return np.dtype(self.base._dtype)
@@ -118,6 +126,12 @@ class Signal(SignalView):
         self.n = n
         self._dtype = dtype
 
+    def __str__(self):
+        return "Signal (" + str(self.n) + " D)"
+
+    def __repr__(self):
+        return "Signal(" + repr(self.n) + ", " + repr(self._dtype) + ")"
+
     @property
     def shape(self):
         return (self.n,)
@@ -140,6 +154,9 @@ class Probe(object):
     def __init__(self, sig, dt):
         self.sig = sig
         self.dt = dt
+
+    def __str__(self):
+        return "Probing " + str(self.sig)
 
 
 class Constant(Signal):
@@ -211,10 +228,10 @@ class SimModel(object):
     """
     def __init__(self, dt=0.001):
         self.dt = dt
-        self.signals = []
-        self.transforms = []
-        self.filters = []
-        self.probes = []
+        self.signals = set()
+        self.transforms = set()
+        self.filters = set()
+        self.probes = set()
 
     def signal(self, n=1, value=None):
         """Add a signal to the model"""
@@ -222,27 +239,25 @@ class SimModel(object):
             rval = Signal(n)
         else:
             rval = Constant(n, value)
-        self.signals.append(rval)
+        self.signals.add(rval)
         return rval
 
     def probe(self, sig, dt):
         """Add a probe to the model"""
         rval = Probe(sig, dt)
-        self.probes.append(rval)
+        self.probes.add(rval)
         return rval
 
     def transform(self, alpha, insig, outsig):
         """Add a transform to the model"""
         rval = Transform(alpha, insig, outsig)
-        if rval.alpha_signal not in self.signals:
-            self.signals.append(rval.alpha_signal)
-        self.transforms.append(rval)
+        self.signals.add(rval.alpha_signal)
+        self.transforms.add(rval)
         return rval
 
     def filter(self, alpha, oldsig, newsig):
         """Add a filter to the model"""
         rval = Filter(alpha, oldsig, newsig)
-        if rval.alpha_signal not in self.signals:
-            self.signals.append(rval.alpha_signal)
-        self.filters.append(rval)
+        self.signals.add(rval.alpha_signal)
+        self.filters.add(rval)
         return rval
