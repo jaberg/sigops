@@ -138,7 +138,7 @@ class SignalView(object):
             return self._name
         except AttributeError:
             if self.base is self:
-                return '<anon>'
+                return '<anon%d>' % id(self)
             else:
                 return 'View(%s)' % self.base.name
 
@@ -286,36 +286,3 @@ class Filter(object):
     @alpha.setter
     def alpha(self, value):
         self.alpha_signal.value[...] = value
-
-class SimModel(object):
-    """
-    A container for model components.
-    """
-    def __init__(self, dt=0.001):
-        self.dt = dt
-        self.signals = set()
-        self.transforms = set()
-        self.filters = set()
-
-    def signal(self, n=1, value=None, name=None):
-        """Add a signal to the model"""
-        if value is None:
-            rval = Signal(n, name=name)
-        else:
-            rval = Constant(n, value, name=name)
-        self.signals.add(rval)
-        return rval
-
-    def transform(self, alpha, insig, outsig):
-        """Add a transform to the model"""
-        rval = Transform(alpha, insig, outsig)
-        self.signals.add(rval.alpha_signal)
-        self.transforms.add(rval)
-        return rval
-
-    def filter(self, alpha, oldsig, newsig):
-        """Add a filter to the model"""
-        rval = Filter(alpha, oldsig, newsig)
-        self.signals.add(rval.alpha_signal)
-        self.filters.add(rval)
-        return rval
