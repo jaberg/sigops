@@ -1,5 +1,5 @@
 import numpy as np
-from nengo.simulator_objects import SimModel
+from nengo.objects import Filter, Signal, SimModel
 from nengo.simulator import Simulator
 
 
