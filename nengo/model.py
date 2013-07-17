@@ -1,7 +1,6 @@
 import math
 
-from .simulator_objects import *
-
+from .objects import *
 
 class Model(object):
 
