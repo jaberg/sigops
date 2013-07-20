@@ -140,7 +140,7 @@ class SignalView(object):
             return self._name
         except AttributeError:
             if self.base is self:
-                return '<anon>'
+                return '<anon%d>' % id(self)
             else:
                 return 'View(%s)' % self.base.name
 
