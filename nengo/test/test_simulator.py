@@ -1,17 +1,18 @@
 import numpy as np
-from nengo.simulator_objects import SimModel
+from nengo import Model
+from nengo.objects import Filter, Signal
 from nengo.simulator import Simulator
 
 
 def test_signal_indexing_1():
-    m = SimModel()
-    one = m.signal(1)
-    two = m.signal(2)
-    three = m.signal(3)
+    m = Model("test_signal_indexing_1")
+    one = m.add(Signal(1))
+    two = m.add(Signal(2))
+    three = m.add(Signal(3))
 
-    m.filter(1, three[0:1], one)
-    m.filter(2.0, three[1:], two)
-    m.filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three)
+    m.add(Filter(1, three[0:1], one))
+    m.add(Filter(2.0, three[1:], two))
+    m.add(Filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three))
 
     sim = Simulator(m)
     sim.signals[three] = np.asarray([1, 2, 3])
