@@ -1,10 +1,12 @@
 """
-simulator_objects.py: model description classes
+Low-level objects
+=================
 
 These classes are used to describe a Nengo model to be simulated.
 Model is the input to a *simulator* (see e.g. simulator.py).
 
 """
+
 import numpy as np
 
 
@@ -148,6 +150,15 @@ class SignalView(object):
     def name(self, value):
         self._name = value
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'name': self.name,
+            'base': self.base.name,
+            'shape': list(self.shape),
+            'elemstrides': list(self.elemstrides),
+            'offset': self.offset,
+        }
 
 
 class Signal(SignalView):
@@ -161,7 +172,10 @@ class Signal(SignalView):
             assert name
 
     def __str__(self):
-        return "Signal (" + str(self.n) + "D, id " + str(id(self)) + ")"
+        try:
+            return "Signal(" + self._name + ", " + str(self.n) + "D)"
+        except AttributeError:
+            return "Signal (id " + str(id(self)) + ", " + str(self.n) + "D)"
 
     def __repr__(self):
         return str(self)
@@ -182,6 +196,14 @@ class Signal(SignalView):
     def base(self):
         return self
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'name': self.name,
+            'n': self.n,
+            'dtype': str(self.dtype),
+        }
+
 
 class Probe(object):
     """A model probe to record a signal"""
@@ -195,6 +217,13 @@ class Probe(object):
     def __repr__(self):
         return str(self)
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'sig': self.sig.name,
+            'dt': self.dt,
+        }
+
 
 class Constant(Signal):
     """A signal meant to hold a fixed value"""
@@ -205,7 +234,9 @@ class Constant(Signal):
         assert self.value.size == n
 
     def __str__(self):
-        return "Constant (" + str(self.value) + ", id " + str(id(self)) + ")"
+        if self.name is not None:
+            return "Constant(" + self.name + ")"
+        return "Constant(id " + str(id(self)) + ")"
 
     def __repr__(self):
         return str(self)
@@ -219,6 +250,13 @@ class Constant(Signal):
         s = np.asarray(self.value.strides)
         return tuple(map(int, s / self.dtype.itemsize))
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'name': self.name,
+            'value': self.value.tolist(),
+        }
+
 
 class Transform(object):
     """A linear transform from a decoded signal to the signals buffer"""
@@ -226,9 +264,10 @@ class Transform(object):
         alpha = np.asarray(alpha)
         if hasattr(outsig, 'value'):
             raise TypeError('transform destination is constant')
-        self.alpha_signal = Constant(n=alpha.size,
-                                     value=alpha,
-                                     name='tf_alpha')
+
+        name = insig.name + ">" + outsig.name + ".tf_alpha"
+
+        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
         self.insig = insig
         self.outsig = outsig
         if self.alpha_signal.size == 1:
@@ -259,6 +298,14 @@ class Transform(object):
     def alpha(self, value):
         self.alpha_signal.value[...] = value
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'alpha': self.alpha.tolist(),
+            'insig': self.insig.name,
+            'outsig': self.outsig.name,
+        }
+
 
 class Filter(object):
     """A linear transform from signals[t-1] to signals[t]"""
@@ -266,8 +313,10 @@ class Filter(object):
         if hasattr(newsig, 'value'):
             raise TypeError('filter destination is constant')
         alpha = np.asarray(alpha)
-        self.alpha_signal = Constant(n=alpha.size, value=alpha,
-                                     name='f_alpha')
+
+        name = oldsig.name + ">" + newsig.name + ".f_alpha"
+
+        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
         self.oldsig = oldsig
         self.newsig = newsig
 
@@ -301,3 +350,11 @@ class Filter(object):
     @alpha.setter
     def alpha(self, value):
         self.alpha_signal.value[...] = value
+
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'alpha': self.alpha.tolist(),
+            'oldsig': self.oldsig.name,
+            'newsig': self.newsig.name,
+        }
