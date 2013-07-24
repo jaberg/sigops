@@ -1,6 +1,7 @@
 import math
 
 from .objects import *
+from . import simulator
 
 class Model(object):
 
@@ -20,11 +21,15 @@ class Model(object):
         self.objs = {}
         self.aliases = {}
         self.probed = {}
-        self.probe_data = {}
+        self.data = {}
 
         self.simtime = self.add(Signal(name='simtime'))
         self.steps = self.add(Signal(name='steps'))
         self.one = self.add(Constant(1, value=[1.0], name='one'))
+
+        # Automatically probe these
+        self.probe(self.simtime)
+        self.probe(self.steps)
 
         # -- steps counts by 1.0
         self.add(Filter(1.0, self.one, self.steps))
@@ -77,12 +82,6 @@ class Model(object):
             self.backend = 'numpy'
 
     @property
-    def time(self):
-        if self.sim_obj is None:
-            return None
-        return self.sim_obj.simulator_time
-
-    @property
     def objects(self):
         return self.objs.values()
 
@@ -94,21 +93,15 @@ class Model(object):
 
     def run(self, time, dt=0.001, output=None, stop_when=None):
         if self.sim_obj is None:
-            logger.debug("No simulator object yet. Building.")
             self.sim_obj = self.simulator.Simulator(self)
-        if stop_when is not None:
-            raise NotImplementedError()
-        if output is not None:
-            raise NotImplementedError()
 
-        steps = int(time / dt)
-        logger.debug("Running simulator for " + str(steps) + " steps")
+        steps = int(time // self.dt)
         self.sim_obj.run_steps(steps)
 
         for k in self.probed:
-            self.probe_data[k] = self.sim_obj.probe_data(self.probed[k])
+            self.data[k] = self.sim_obj.probe_data(self.probed[k])
 
-        return self.probe_data
+        return self.data
 
     ### Model manipulation
 
@@ -177,7 +170,7 @@ class Model(object):
 
     # Model creation methods
 
-    def probe(self, target, sample_every=None, pstc=None, static=False):
+    def probe(self, target, sample_every=None, pstc=None):
         def _filter_coefs(pstc, dt):
             pstc = max(pstc, dt)
             decay = math.exp(-dt / pstc)
@@ -186,22 +179,29 @@ class Model(object):
         if sample_every is None:
             sample_every = self.dt
 
+        probe_type = ''
+        if isinstance(target, str):
+            s = target.split('.')
+            if len(s) > 1:
+                target, probe_type = s[0], s[1]
         obj = self.get(target)
-        obj_s = self.get_string(target)
+
+        if type(obj) != Signal:
+            obj = obj.signal
+
+        if pstc is None:
+            obj_s = self.get_string(target)
+        else:
+            obj_s = "%s,pstc=%f" % (self.get_string(target), pstc)
 
         if pstc is not None and pstc > self.dt:
             fcoef, tcoef = _filter_coefs(pstc=pstc, dt=self.dt)
-            probe_sig = self.signal(obj.sig.n)
-            self.filter(fcoef, probe_sig, probe_sig)
-            self.transform(tcoef, obj.sig, probe_sig)
-            p = SimModel.probe(self, probe_sig, sample_every)
+            probe_sig = self.add(Signal(obj.n))
+            self.add(Filter(fcoef, probe_sig, probe_sig))
+            self.add(Transform(tcoef, obj, probe_sig))
+            p = self.add(Probe(probe_sig, sample_every))
         else:
-            p = SimModel.probe(self, obj.sig, sample_every)
-
-        i = 0
-        while self.probed.has_key(obj_s):
-            i += 1
-            obj_s = self.get_string(target) + "_" + str(i)
+            p = self.add(Probe(obj, sample_every))
 
         self.probed[obj_s] = p
         return p

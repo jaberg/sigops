@@ -1,11 +1,11 @@
 """
-simulator_objects.py: model description classes
+Low-level objects
+=================
 
 These classes are used to describe a Nengo model to be simulated.
 Model is the input to a *simulator* (see e.g. simulator.py).
 
 """
-import numpy as np
 
 
 random_weight_rng = np.random.RandomState(12345)
@@ -161,7 +161,10 @@ class Signal(SignalView):
             assert name
 
     def __str__(self):
-        return "Signal (" + str(self.n) + "D, id " + str(id(self)) + ")"
+        try:
+            return "Signal(" + self._name + ", " + str(self.n) + "D)"
+        except AttributeError:
+            return "Signal (id " + str(id(self)) + ", " + str(self.n) + "D)"
 
     def __repr__(self):
         return str(self)
@@ -202,7 +205,6 @@ class Probe(object):
         model.probes.add(self)
 
 
-
 class Constant(Signal):
     """A signal meant to hold a fixed value"""
     def __init__(self, n, value, name=None):
@@ -212,7 +214,9 @@ class Constant(Signal):
         assert self.value.size == n
 
     def __str__(self):
-        return "Constant (" + str(self.value) + ", id " + str(id(self)) + ")"
+        if self.name is not None:
+            return "Constant(" + self.name + ")"
+        return "Constant(id " + str(id(self)) + ")"
 
     def __repr__(self):
         return str(self)
@@ -233,9 +237,10 @@ class Transform(object):
         alpha = np.asarray(alpha)
         if hasattr(outsig, 'value'):
             raise TypeError('transform destination is constant')
-        self.alpha_signal = Constant(n=alpha.size,
-                                     value=alpha,
-                                     name='tf_alpha')
+
+        name = insig.name + ">" + outsig.name + ".tf_alpha"
+
+        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
         self.insig = insig
         self.outsig = outsig
         if self.alpha_signal.size == 1:
@@ -276,8 +281,10 @@ class Filter(object):
         if hasattr(newsig, 'value'):
             raise TypeError('filter destination is constant')
         alpha = np.asarray(alpha)
-        self.alpha_signal = Constant(n=alpha.size, value=alpha,
-                                     name='f_alpha')
+
+        name = oldsig.name + ">" + newsig.name + ".f_alpha"
+
+        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
         self.oldsig = oldsig
         self.newsig = newsig
 
