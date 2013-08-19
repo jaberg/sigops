@@ -1,16 +1,18 @@
-import math
+import codecs
+import json
+import logging
+import pickle
+import os.path
 
 from .objects import *
 from . import simulator
 
+logger = logging.getLogger(__name__)
+
 class Model(object):
 
-    BACKENDS = {
-        'numpy': 'nengo.simulator',
-    }
-
-    def __init__(self, name, seed=None, fixed_seed=None, backend='numpy',
-                 dt=0.001):
+    def __init__(self, name, seed=None, fixed_seed=None,
+                 simulator=simulator.Simulator, dt=0.001):
         self.dt = dt
 
         self.signals = set()
@@ -22,6 +24,17 @@ class Model(object):
         self.aliases = {}
         self.probed = {}
         self.data = {}
+
+        self.name = name
+        self.simulator = simulator
+
+        if seed is None:
+            self.seed = 123
+        else:
+            self.seed = seed
+
+        if fixed_seed is not None:
+            raise NotImplementedError()
 
         self.simtime = self.add(Signal(name='simtime'))
         self.steps = self.add(Signal(name='steps'))
@@ -39,51 +52,75 @@ class Model(object):
         self.add(Filter(dt, self.one, self.simtime))
         self.add(Filter(dt, self.steps, self.simtime))
 
-        self.name = name
-        self.backend = backend
-
-        if seed is None:
-            self.seed = 123
-        else:
-            self.seed = seed
-
-        if fixed_seed is not None:
-            raise NotImplementedError()
-
     def __str__(self):
         return "Model: " + self.name
 
     @property
-    def backend(self):
-        return self._backend
-
-    @backend.setter
-    def backend(self, backend):
-        if hasattr(self, '_backend') and backend == self._backend:
-            return
-
-        try:
-            toimport = Model.BACKENDS[backend]
-            self.simulator = __import__(toimport, globals(), locals(),
-                                        ['simulator'], -1)
-            self.sim_obj = None
-            self._backend = backend
-
-        except KeyError:
-            print (backend + " not a registered backend. "
-                   "Falling back to numpy.")
-            self.backend = 'numpy'
-
-        except ImportError:
-            if backend == 'numpy':
-                raise ImportError("Cannot import numpy backend!")
-            print (backend + " cannot be imported. "
-                   "Falling back to numpy.")
-            self.backend = 'numpy'
-
-    @property
     def objects(self):
         return self.objs.values()
+
+    ### I/O
+
+    def save(self, fname, format=None):
+        """Save this model to a file.
+
+        So far, JSON and Pickle are the possible formats.
+
+        """
+        if format is None:
+            format = os.path.splitext(fname)[1]
+
+        if format in ('json', '.json'):
+            with codecs.open(fname, 'w', encoding='utf-8') as f:
+                json.dump(self.to_json(), f, sort_keys=True, indent=2)
+                print "Saved {} successfully.".format(fname)
+        else:
+            # Default to pickle
+            with open(fname, 'wb') as f:
+                pickle.dump(self, f)
+                print "Saved {} successfully.".format(fname)
+
+    def to_json(self):
+        d = {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'name': self.name,
+            'dt': self.dt,
+            # 'simulator': ?? We probably don't want to serialize this
+        }
+
+        d['signals'] = [sig.to_json() for sig in self.signals]
+        d['nonlinearities'] = [nl.to_json() for nl in self.nonlinearities]
+        d['encoders'] = [enc.to_json() for enc in self.encoders]
+        d['decoders'] = [dec.to_json() for dec in self.decoders]
+        d['transforms'] = [trans.to_json() for trans in self.transforms]
+        d['filters'] = [filt.to_json() for filt in self.filters]
+        d['probes'] = [pr.to_json() for pr in self.probes]
+
+        # d['aliases'] = self.aliases
+        # d['objs'] = {k: v.to_json() for k, v in self.objs.items()}
+        # d['probed'] = ?? Deal with later!
+        # d['data'] = ?? Do we want to serialize this?
+        return d
+
+    @staticmethod
+    def load(self, fname, format=None):
+        """Load this model from a file.
+
+        So far, JSON and Pickle are the possible formats.
+
+        """
+        if format is None:
+            format = os.path.splitext(fname)[1]
+
+        if format == 'json':
+            with codecs.open(fname, 'r', encoding='utf-8') as f:
+                return Model.from_json(json.load(f))
+        else:
+            # Default to pickle
+            with open(fname, 'rb') as f:
+                return pickle.load(f)
+
+        raise IOError("Could not load {}".format(fname))
 
     ### Simulation methods
 
@@ -92,8 +129,8 @@ class Model(object):
         self.sim_obj.reset()
 
     def run(self, time, dt=0.001, output=None, stop_when=None):
-        if self.sim_obj is None:
-            self.sim_obj = self.simulator.Simulator(self)
+        if getattr(self, 'sim_obj', None) is None:
+            self.sim_obj = self.simulator(self)
 
         steps = int(time // self.dt)
         self.sim_obj.run_steps(steps)
@@ -161,25 +198,21 @@ class Model(object):
         return obj
 
     def alias(self, alias, target):
-        obj = self.get(target)
-        if obj is None:
+        obj_s = self.get_string(target)
+        if obj_s is None:
             raise ValueError(target + " cannot be found.")
-        self.aliases[alias] = obj
-        return obj
+        self.aliases[alias] = obj_s
+        return self.get(obj_s)
 
 
     # Model creation methods
 
-    def probe(self, target, sample_every=None, pstc=None):
-        def _filter_coefs(pstc, dt):
-            pstc = max(pstc, dt)
-            decay = math.exp(-dt / pstc)
-            return decay, (1.0 - decay)
-
+    def probe(self, target, sample_every=None, filter=None):
         if sample_every is None:
             sample_every = self.dt
 
         probe_type = ''
+        key = target
         if isinstance(target, str):
             s = target.split('.')
             if len(s) > 1:
@@ -189,13 +222,8 @@ class Model(object):
         if type(obj) != Signal:
             obj = obj.signal
 
-        if pstc is None:
-            obj_s = self.get_string(target)
-        else:
-            obj_s = "%s,pstc=%f" % (self.get_string(target), pstc)
-
-        if pstc is not None and pstc > self.dt:
-            fcoef, tcoef = _filter_coefs(pstc=pstc, dt=self.dt)
+        if filter is not None and filter > self.dt:
+            fcoef, tcoef = _filter_coefs(pstc=filter, dt=self.dt)
             probe_sig = self.add(Signal(obj.n))
             self.add(Filter(fcoef, probe_sig, probe_sig))
             self.add(Transform(tcoef, obj, probe_sig))
@@ -203,5 +231,5 @@ class Model(object):
         else:
             p = self.add(Probe(obj, sample_every))
 
-        self.probed[obj_s] = p
+        self.probed[key] = p
         return p

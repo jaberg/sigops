@@ -148,6 +148,15 @@ class SignalView(object):
     def name(self, value):
         self._name = value
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'name': self.name,
+            'base': self.base.name,
+            'shape': list(self.shape),
+            'elemstrides': list(self.elemstrides),
+            'offset': self.offset,
+        }
 
 
 class Signal(SignalView):
@@ -188,6 +197,14 @@ class Signal(SignalView):
     def add_to_model(self, model):
         model.signals.add(self)
 
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'name': self.name,
+            'n': self.n,
+            'dtype': str(self.dtype),
+        }
+
 
 class Probe(object):
     """A model probe to record a signal"""
@@ -203,6 +220,13 @@ class Probe(object):
 
     def add_to_model(self, model):
         model.probes.add(self)
+
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'sig': self.sig.name,
+            'dt': self.dt,
+        }
 
 
 class Constant(Signal):
@@ -229,6 +253,13 @@ class Constant(Signal):
     def elemstrides(self):
         s = np.asarray(self.value.strides)
         return tuple(map(int, s / self.dtype.itemsize))
+
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'name': self.name,
+            'value': self.value.tolist(),
+        }
 
 
 class Transform(object):
@@ -273,6 +304,14 @@ class Transform(object):
     def add_to_model(self, model):
         model.signals.add(self.alpha_signal)
         model.transforms.add(self)
+
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'alpha': self.alpha.tolist(),
+            'insig': self.insig.name,
+            'outsig': self.outsig.name,
+        }
 
 
 class Filter(object):
@@ -322,3 +361,11 @@ class Filter(object):
     def add_to_model(self, model):
         model.signals.add(self.alpha_signal)
         model.filters.add(self)
+
+    def to_json(self):
+        return {
+            '__class__': self.__module__ + '.' + self.__class__.__name__,
+            'alpha': self.alpha.tolist(),
+            'oldsig': self.oldsig.name,
+            'newsig': self.newsig.name,
+        }
