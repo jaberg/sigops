@@ -1,7 +1,4 @@
-"""
-simulator.py: Simple reference simulator for base.Model
-
-"""
+import logging
 
 import numpy as np
 
