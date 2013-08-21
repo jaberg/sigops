@@ -88,8 +88,6 @@ class Simulator(object):
 
         # -- filters: signals_copy -> signals
         for filt in self.model.filters:
-            #print
-            # print 'old sig: ', filt.oldsig.name, get_signal(self.signals_copy, filt.oldsig)
             try:
                 dot_inc(filt.alpha,
                         get_signal(self.signals_copy, filt.oldsig),
@@ -97,19 +95,12 @@ class Simulator(object):
             except Exception, e:
                 e.args = e.args + (filt.oldsig, filt.newsig)
                 raise
-            # print 'new sig: ', filt.newsig.name, get_signal(self.signals, filt.newsig)
 
         # -- transforms: signals_tmp -> signals
         for tf in self.model.transforms:
-            #print
-            #print 'old sig: ', tf.insig.name, get_signal(self.signals_copy, tf.insig)
             dot_inc(tf.alpha,
                     get_signal(self.signals_tmp, tf.insig),
                     get_signal(self.signals, tf.outsig))
-            #print 'new sig: ', tf.outsig.name, get_signal(self.signals, tf.outsig)
-        #print 'POST'
-        #for k, v in self.signals.items():
-        #    print k, v
 
         # -- probes signals -> probe buffers
         for probe in self.model.probes:
@@ -120,11 +111,11 @@ class Simulator(object):
 
         self.n_steps += 1
 
-    def run_steps(self, N, verbose=False):
+    def run_steps(self, N):
         for i in xrange(N):
+            if i % 1000 == 0:
+                logger.debug("Step %d", i)
             self.step()
-            if verbose:
-                print self.signals
 
     def probe_data(self, probe):
         return np.asarray(self.probe_outputs[probe])

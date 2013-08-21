@@ -29,11 +29,10 @@ class ShapeMismatch(ValueError):
 
 class TODO(NotImplementedError):
     """Potentially easy NotImplementedError"""
+    pass
 
 
 class SignalView(object):
-    """Interpretable, vector-valued quantity within NEF
-    """
     def __init__(self, base, shape, elemstrides, offset, name=None):
         assert base
         self.base = base
