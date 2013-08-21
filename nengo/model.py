@@ -4,7 +4,7 @@ import logging
 import pickle
 import os.path
 
-from .objects import *
+from . import objects
 from . import simulator
 
 
@@ -38,28 +38,24 @@ class Model(object):
         if fixed_seed is not None:
             raise NotImplementedError()
 
-        self.simtime = self.add(Signal(name='simtime'))
-        self.steps = self.add(Signal(name='steps'))
-        self.one = self.add(Constant(1, value=[1.0], name='one'))
+        self.simtime = self.add(objects.Signal(name='simtime'))
+        self.steps = self.add(objects.Signal(name='steps'))
+        self.one = self.add(objects.Constant(1, value=[1.0], name='one'))
 
         # Automatically probe these
         self.probe(self.simtime)
         self.probe(self.steps)
 
         # -- steps counts by 1.0
-        self.add(Filter(1.0, self.one, self.steps))
-        self.add(Filter(1.0, self.steps, self.steps))
+        self.add(objects.Filter(1.0, self.one, self.steps))
+        self.add(objects.Filter(1.0, self.steps, self.steps))
 
         # simtime <- dt * steps
-        self.add(Filter(dt, self.one, self.simtime))
-        self.add(Filter(dt, self.steps, self.simtime))
+        self.add(objects.Filter(dt, self.one, self.simtime))
+        self.add(objects.Filter(dt, self.steps, self.simtime))
 
     def __str__(self):
         return "Model: " + self.name
-
-    @property
-    def objects(self):
-        return self.objs.values()
 
     ### I/O
 
@@ -75,12 +71,12 @@ class Model(object):
         if format in ('json', '.json'):
             with codecs.open(fname, 'w', encoding='utf-8') as f:
                 json.dump(self.to_json(), f, sort_keys=True, indent=2)
-                print "Saved {} successfully.".format(fname)
+                logger.info("Saved %s successfully.", fname)
         else:
             # Default to pickle
             with open(fname, 'wb') as f:
                 pickle.dump(self, f)
-                print "Saved {} successfully.".format(fname)
+                logger.info("Saved %s successfully.", fname)
 
     def to_json(self):
         d = {
@@ -124,12 +120,12 @@ class Model(object):
     ### Simulation methods
 
     def reset(self):
-        logger.debug("Resetting simulator")
+        logger.debug("Resetting simulator for %s", self.name)
         self.sim_obj.reset()
 
     def run(self, time, dt=0.001, output=None, stop_when=None):
         if getattr(self, 'sim_obj', None) is None:
-            logger.debug("Creating simulator")
+            logger.debug("Creating simulator for %s", model.name)
             self.sim_obj = self.simulator(self)
 
         steps = int(time // self.dt)
@@ -158,11 +154,11 @@ class Model(object):
                 return self.aliases[target]
             elif self.objs.has_key(target):
                 return self.objs[target]
-            print "Cannot find " + target + " in this model."
+            logger.error("Cannot find %s in this model.", target)
             return default
 
         if not target in self.objs.values():
-            print "Cannot find " + str(target) + " in this model."
+            logger.error("Cannot find %s in this model.", str(target))
             return default
 
         return target
@@ -178,13 +174,13 @@ class Model(object):
             if v == target:
                 return k
 
-        print "Cannot find " + str(target) + " in this model."
+        logger.warning("Cannot find %s in this model.", str(target))
         return default
 
     def remove(self, target):
         obj = self.get(target)
         if obj is None:
-            print target + " not in this model."
+            logger.warning("%s is not in this model.", str(target))
             return
 
         obj.remove_from_model(self)
@@ -192,9 +188,11 @@ class Model(object):
         for k, v in self.objs.iteritems():
             if v == obj:
                 del self.objs[k]
+                logger.info("%s removed.", k)
         for k, v in self.aliases.iteritem():
             if v == obj:
                 del self.aliases[k]
+                logger.info("Alias '%s' removed.", k)
 
         return obj
 
@@ -203,6 +201,7 @@ class Model(object):
         if obj_s is None:
             raise ValueError(target + " cannot be found.")
         self.aliases[alias] = obj_s
+        logger.info("%s aliased to %s", obj_s, alias)
         return self.get(obj_s)
 
 
@@ -220,17 +219,17 @@ class Model(object):
                 target, probe_type = s[0], s[1]
         obj = self.get(target)
 
-        if type(obj) != Signal:
+        if type(obj) != objects.Signal:
             obj = obj.signal
 
         if filter is not None and filter > self.dt:
             fcoef, tcoef = _filter_coefs(pstc=filter, dt=self.dt)
-            probe_sig = self.add(Signal(obj.n))
-            self.add(Filter(fcoef, probe_sig, probe_sig))
-            self.add(Transform(tcoef, obj, probe_sig))
-            p = self.add(Probe(probe_sig, sample_every))
+            probe_sig = self.add(objects.Signal(obj.n))
+            self.add(objects.Filter(fcoef, probe_sig, probe_sig))
+            self.add(objects.Transform(tcoef, obj, probe_sig))
+            p = self.add(objects.Probe(probe_sig, sample_every))
         else:
-            p = self.add(Probe(obj, sample_every))
+            p = self.add(objects.Probe(obj, sample_every))
 
         self.probed[key] = p
         return p
