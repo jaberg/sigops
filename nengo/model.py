@@ -7,7 +7,9 @@ import os.path
 from .objects import *
 from . import simulator
 
+
 logger = logging.getLogger(__name__)
+
 
 class Model(object):
 
@@ -127,9 +129,11 @@ class Model(object):
 
     def run(self, time, dt=0.001, output=None, stop_when=None):
         if getattr(self, 'sim_obj', None) is None:
+            logger.debug("Creating simulator")
             self.sim_obj = self.simulator(self)
 
         steps = int(time // self.dt)
+        logger.debug("Running for %f seconds; %d steps", time, steps)
         self.sim_obj.run_steps(steps)
 
         for k in self.probed:
