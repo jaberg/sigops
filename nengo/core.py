@@ -6,6 +6,8 @@ These classes are used to describe a Nengo model to be simulated.
 Model is the input to a *simulator* (see e.g. simulator.py).
 
 """
+import inspect
+import logging
 
 
 random_weight_rng = np.random.RandomState(12345)
@@ -141,11 +143,15 @@ class SignalView(object):
             if self.base is self:
                 return '<anon%d>' % id(self)
             else:
-                return 'View(%s)' % self.base.name
+                return 'View(%s[%d])' % (self.base.name, self.offset)
 
     @name.setter
     def name(self, value):
         self._name = value
+
+    def add_to_model(self, model):
+        if self.base not in model.signals:
+            raise TypeError("Cannot add signal views. Add the signal instead.")
 
     def to_json(self):
         return {
@@ -180,6 +186,10 @@ class Signal(SignalView):
     @property
     def shape(self):
         return (self.n,)
+
+    @property
+    def size(self):
+        return self.n
 
     @property
     def elemstrides(self):
