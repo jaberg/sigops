@@ -6,6 +6,8 @@ These classes are used to describe a Nengo model to be simulated.
 Model is the input to a *simulator* (see e.g. simulator.py).
 
 """
+import inspect
+import logging
 
 import numpy as np
 
@@ -143,7 +145,7 @@ class SignalView(object):
             if self.base is self:
                 return '<anon%d>' % id(self)
             else:
-                return 'View(%s)' % self.base.name
+                return 'View(%s[%d])' % (self.base.name, self.offset)
 
     @name.setter
     def name(self, value):
@@ -182,6 +184,10 @@ class Signal(SignalView):
     @property
     def shape(self):
         return (self.n,)
+
+    @property
+    def size(self):
+        return self.n
 
     @property
     def elemstrides(self):
