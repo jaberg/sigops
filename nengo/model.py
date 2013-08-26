@@ -3,13 +3,12 @@ import json
 import logging
 import pickle
 import os.path
+import numpy as np
 
 from . import objects
 from . import simulator
 
-
 logger = logging.getLogger(__name__)
-
 
 class Model(object):
 
@@ -30,13 +29,9 @@ class Model(object):
         self.name = name
         self.simulator = simulator
 
-        if seed is None:
-            self.seed = 123
-        else:
-            self.seed = seed
-
-        if fixed_seed is not None:
-            raise NotImplementedError()
+        self.seed = np.random.randint(2**31-1) if seed is None else seed
+        self.rng = np.random.RandomState(self.seed)
+        self.fixed_seed = fixed_seed
 
         self.simtime = self.add(objects.Signal(name='simtime'))
         self.steps = self.add(objects.Signal(name='steps'))
@@ -53,6 +48,10 @@ class Model(object):
         # simtime <- dt * steps
         self.add(objects.Filter(dt, self.one, self.simtime))
         self.add(objects.Filter(dt, self.steps, self.simtime))
+
+    def _get_new_seed(self):
+        return self.rng.randint(2**31-1) if self.fixed_seed is None \
+            else self.fixed_seed
 
     def __str__(self):
         return "Model: " + self.name
@@ -125,7 +124,7 @@ class Model(object):
 
     def run(self, time, dt=0.001, output=None, stop_when=None):
         if getattr(self, 'sim_obj', None) is None:
-            logger.debug("Creating simulator for %s", model.name)
+            logger.debug("Creating simulator for %s", self.name)
             self.sim_obj = self.simulator(self)
 
         steps = int(time // self.dt)
