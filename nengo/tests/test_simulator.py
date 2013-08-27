@@ -6,7 +6,7 @@ except ImportError:
 import numpy as np
 
 import nengo
-from nengo.objects import Filter, Signal
+from nengo.core import Filter, Signal
 from nengo.simulator import Simulator
 
 
