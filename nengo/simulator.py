@@ -103,8 +103,8 @@ class Simulator(object):
 
         self.n_steps += 1
 
-    def run_steps(self, N, verbose=False):
+    def run_steps(self, N):
         for i in xrange(N):
+            if i % 1000 == 0:
+                logger.debug("Step %d", i)
             self.step()
-            if verbose:
-                print self.signals
