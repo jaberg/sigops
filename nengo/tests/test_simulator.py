@@ -5,7 +5,7 @@ except ImportError:
 
 import numpy as np
 
-from nengo.objects import Filter, Signal, SimModel
+from nengo.core import Filter, Signal, SimModel
 from nengo.simulator import Simulator
 
 
