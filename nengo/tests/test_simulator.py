@@ -23,13 +23,13 @@ class TestSimulator(unittest.TestCase):
         sim = Simulator(m)
         sim.signals[three] = np.asarray([1, 2, 3])
         sim.step()
-        assert np.all(sim.signals[one] == 1)
-        assert np.all(sim.signals[two] == [4, 6])
-        assert np.all(sim.signals[three] == [3, 2, 1])
+        self.assertTrue(np.all(sim.signals[one] == 1))
+        self.assertTrue(np.all(sim.signals[two] == [4, 6]))
+        self.assertTrue(np.all(sim.signals[three] == [3, 2, 1]))
         sim.step()
-        assert np.all(sim.signals[one] == 3)
-        assert np.all(sim.signals[two] == [4, 2])
-        assert np.all(sim.signals[three] == [1, 2, 3])
+        self.assertTrue(np.all(sim.signals[one] == 3))
+        self.assertTrue(np.all(sim.signals[two] == [4, 2]))
+        self.assertTrue(np.all(sim.signals[three] == [1, 2, 3]))
 
 
 if __name__ == "__main__":
