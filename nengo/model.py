@@ -5,8 +5,10 @@ import pickle
 import os.path
 import numpy as np
 
+from . import core
 from . import objects
 from . import simulator
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,21 +35,21 @@ class Model(object):
         self.rng = np.random.RandomState(self.seed)
         self.fixed_seed = fixed_seed
 
-        self.simtime = self.add(objects.Signal(name='simtime'))
-        self.steps = self.add(objects.Signal(name='steps'))
-        self.one = self.add(objects.Constant(1, value=[1.0], name='one'))
+        self.simtime = self.add(core.Signal(name='simtime'))
+        self.steps = self.add(core.Signal(name='steps'))
+        self.one = self.add(core.Constant(1, value=[1.0], name='one'))
 
         # Automatically probe these
         self.probe(self.simtime)
         self.probe(self.steps)
 
         # -- steps counts by 1.0
-        self.add(objects.Filter(1.0, self.one, self.steps))
-        self.add(objects.Filter(1.0, self.steps, self.steps))
+        self.add(core.Filter(1.0, self.one, self.steps))
+        self.add(core.Filter(1.0, self.steps, self.steps))
 
         # simtime <- dt * steps
-        self.add(objects.Filter(dt, self.one, self.simtime))
-        self.add(objects.Filter(dt, self.steps, self.simtime))
+        self.add(core.Filter(dt, self.one, self.simtime))
+        self.add(core.Filter(dt, self.steps, self.simtime))
 
     def _get_new_seed(self):
         return self.rng.randint(2**31-1) if self.fixed_seed is None \
@@ -143,7 +145,7 @@ class Model(object):
             raise ValueError("Something called " + obj.name + " already exists."
                              " Please choose a different name.")
         obj.add_to_model(self)
-        if hasattr(obj, 'name'):
+        if hasattr(obj, 'name') and not obj.__module__ == 'core':
             self.objs[obj.name] = obj
         return obj
 
@@ -218,17 +220,17 @@ class Model(object):
                 target, probe_type = s[0], s[1]
         obj = self.get(target)
 
-        if type(obj) != objects.Signal:
+        if type(obj) != core.Signal:
             obj = obj.signal
 
         if filter is not None and filter > self.dt:
             fcoef, tcoef = _filter_coefs(pstc=filter, dt=self.dt)
-            probe_sig = self.add(objects.Signal(obj.n))
-            self.add(objects.Filter(fcoef, probe_sig, probe_sig))
-            self.add(objects.Transform(tcoef, obj, probe_sig))
-            p = self.add(objects.Probe(probe_sig, sample_every))
+            probe_sig = self.add(core.Signal(obj.n))
+            self.add(core.Filter(fcoef, probe_sig, probe_sig))
+            self.add(core.Transform(tcoef, obj, probe_sig))
+            p = self.add(core.Probe(probe_sig, sample_every))
         else:
-            p = self.add(objects.Probe(obj, sample_every))
+            p = self.add(core.Probe(obj, sample_every))
 
         self.probed[key] = p
         return p
