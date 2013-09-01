@@ -35,12 +35,12 @@ class Model(object):
         self.rng = np.random.RandomState(self.seed)
         self.fixed_seed = fixed_seed
 
-        self.simtime = self.add(core.Signal(name='simtime'))
+        self.t = self.add(core.Signal(name='simtime'))
         self.steps = self.add(core.Signal(name='steps'))
         self.one = self.add(core.Constant(1, value=[1.0], name='one'))
 
         # Automatically probe these
-        self.probe(self.simtime)
+        self.probe(self.t)
         self.probe(self.steps)
 
         # -- steps counts by 1.0
@@ -48,8 +48,8 @@ class Model(object):
         self.add(core.Filter(1.0, self.steps, self.steps))
 
         # simtime <- dt * steps
-        self.add(core.Filter(dt, self.one, self.simtime))
-        self.add(core.Filter(dt, self.steps, self.simtime))
+        self.add(core.Filter(dt, self.one, self.t))
+        self.add(core.Filter(dt, self.steps, self.t))
 
     def _get_new_seed(self):
         return self.rng.randint(2**31-1) if self.fixed_seed is None \
@@ -212,25 +212,9 @@ class Model(object):
         if sample_every is None:
             sample_every = self.dt
 
-        probe_type = ''
-        key = target
-        if isinstance(target, str):
-            s = target.split('.')
-            if len(s) > 1:
-                target, probe_type = s[0], s[1]
-        obj = self.get(target)
+        if isinstance(target, core.Signal):
+            p = core.Probe(target, sample_every)
 
-        if type(obj) != core.Signal:
-            obj = obj.signal
-
-        if filter is not None and filter > self.dt:
-            fcoef, tcoef = _filter_coefs(pstc=filter, dt=self.dt)
-            probe_sig = self.add(core.Signal(obj.n))
-            self.add(core.Filter(fcoef, probe_sig, probe_sig))
-            self.add(core.Transform(tcoef, obj, probe_sig))
-            p = self.add(core.Probe(probe_sig, sample_every))
-        else:
-            p = self.add(core.Probe(obj, sample_every))
-
-        self.probed[key] = p
+        self.probed[target] = p
+        self.add(p)
         return p
