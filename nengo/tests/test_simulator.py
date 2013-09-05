@@ -13,9 +13,9 @@ from nengo.simulator import Simulator
 class TestSimulator(unittest.TestCase):
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
-        one = m.add(Signal(n=1))
-        two = m.add(Signal(n=2))
-        three = m.add(Signal(n=3))
+        one = m.add(Signal(n=1, name='a'))
+        two = m.add(Signal(n=2, name='b'))
+        three = m.add(Signal(n=3, name='c'))
 
         m.add(Filter(1, three[0:1], one))
         m.add(Filter(2.0, three[1:], two))
