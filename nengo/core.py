@@ -204,7 +204,7 @@ class Signal(SignalView):
         return self
 
     def add_to_model(self, model):
-        model.signals.add(self)
+        model.signals.append(self)
 
     def to_json(self):
         return {
@@ -228,7 +228,7 @@ class Probe(object):
         return str(self)
 
     def add_to_model(self, model):
-        model.probes.add(self)
+        model.probes.append(self)
 
     def to_json(self):
         return {
@@ -269,6 +269,10 @@ class Constant(Signal):
             'name': self.name,
             'value': self.value.tolist(),
         }
+
+
+def is_signal(sig):
+    return isinstance(sig, SignalView)
 
 
 def is_constant(sig):
@@ -320,8 +324,8 @@ class Transform(object):
         self.alpha_signal.value[...] = value
 
     def add_to_model(self, model):
-        model.signals.add(self.alpha_signal)
-        model.transforms.add(self)
+        model.signals.append(self.alpha_signal)
+        model.transforms.append(self)
 
     def to_json(self):
         return {
@@ -377,8 +381,8 @@ class Filter(object):
         self.alpha_signal.value[...] = value
 
     def add_to_model(self, model):
-        model.signals.add(self.alpha_signal)
-        model.filters.add(self)
+        model.signals.append(self.alpha_signal)
+        model.filters.append(self)
 
     def to_json(self):
         return {
