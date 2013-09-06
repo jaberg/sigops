@@ -240,6 +240,10 @@ class Constant(Signal):
         }
 
 
+def is_signal(sig):
+    return isinstance(sig, SignalView)
+
+
 def is_constant(sig):
     """
     Return True iff `sig` is (or is a view of) a Constant signal.

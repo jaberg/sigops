@@ -5,6 +5,9 @@ simulator.py: Simple reference simulator for base.Model
 
 import numpy as np
 
+
+logger = logging.getLogger(__name__)
+
 def get_signal(signals_dct, obj):
     # look up a Signal or SignalView
     # in a `signals_dct` such as self.signals
@@ -103,8 +106,8 @@ class Simulator(object):
 
         self.n_steps += 1
 
-    def run_steps(self, N):
-        for i in xrange(N):
+    def run_steps(self, steps):
+        for i in xrange(steps):
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
             self.step()
