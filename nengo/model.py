@@ -136,6 +136,23 @@ class Model(object):
                 model.probed[target] = model.probed[target].probe
 
     def simulator(self, dt=0.001, sim_class=simulator.Simulator, **sim_args):
+        """Get a new simulator object for the model.
+
+        Parameters
+        ----------
+        dt : float, optional
+            Fundamental unit of time for the simulator, in seconds.
+        sim_class : child class of `Simulator`, optional
+            The class of simulator to be used.
+        **sim_args : optional
+            Arguments to pass to the simulator constructor.
+
+        Returns
+        -------
+        simulator : `sim_class`
+            A new simulator object, containing a copy of the model in its
+            current state.
+        """
         logger.info("Copying model")
         memo = {}
         modelcopy = copy.deepcopy(self, memo)
