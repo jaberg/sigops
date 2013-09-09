@@ -6,7 +6,7 @@ These classes are used to describe a Nengo model to be simulated.
 Model is the input to a *simulator* (see e.g. simulator.py).
 
 """
-import inspect
+import copy
 import logging
 
 import numpy as np
