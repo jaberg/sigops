@@ -52,6 +52,8 @@ def dot_inc(a, b, targ):
 
 
 class Simulator(object):
+    """TODO"""
+
     def __init__(self, model):
         self.model = model
 
@@ -117,12 +119,14 @@ class Simulator(object):
         self.n_steps += 1
 
     def run(self, time):
+        """Simulate for the given length of time."""
         steps = int(time // self.model.dt)
         logger.debug("Running %s for %f seconds, or %d steps",
                      self.model.name, time, steps)
         self.run_steps(steps)
 
     def run_steps(self, steps):
+        """Simulate for the given number of steps."""
         for i in xrange(steps):
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
