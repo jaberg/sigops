@@ -235,6 +235,7 @@ class BaseSimulator(object):
 
         # -- all views of a base object in a particular dictionary
         by_base_writes = defaultdict(list)
+        by_base_reads = defaultdict(list)
         reads = defaultdict(list)
         sets = defaultdict(list)
         incs = defaultdict(list)
@@ -243,6 +244,9 @@ class BaseSimulator(object):
         for op in operators:
             for node in op.sets + op.incs:
                 by_base_writes[node.base].append(node)
+
+            for node in op.reads:
+                by_base_reads[node.base].append(node)
 
             for node in op.reads:
                 reads[node].append(op)
@@ -296,6 +300,8 @@ class BaseSimulator(object):
         for node, post_ops in ups.items():
             pre_ops = sets[node] + incs[node] + reads[node]
             for other in by_base_writes[node.base]:
+                pre_ops += sets[other] + incs[other] + reads[other]
+            for other in by_base_reads[node.base]:
                 pre_ops += sets[other] + incs[other] + reads[other]
             dg.add_edges_from(itertools.product(set(pre_ops), post_ops))
 
