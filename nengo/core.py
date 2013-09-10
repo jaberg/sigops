@@ -9,6 +9,11 @@ Model is the input to a *simulator* (see e.g. simulator.py).
 import copy
 import logging
 
+import numpy as np
+import simulator as sim
+
+
+logger = logging.getLogger(__name__)
 
 random_weight_rng = np.random.RandomState(12345)
 
@@ -377,7 +382,20 @@ class Transform(object):
 
     def add_to_model(self, model):
         model.signals.append(self.alpha_signal)
-        model.transforms.append(self)
+        dst = model._get_output_view(self.outsig)
+
+        # XXX: Complicated lookup still necessary?
+        if self.insig in model._decoder_outputs:
+            insig = model._decoder_outputs[self.insig]
+        elif self.insig.base in model._decoder_outputs:
+            insig = self.insig.view_like_self_of(
+                model._decoder_outputs[self.insig.base])
+        else:
+            insig = self.insig
+
+        model._operators.append(
+            sim.DotInc(self.alpha_signal, insig, dst,
+                       tag='transform'))
 
     def to_json(self):
         return {
@@ -434,7 +452,11 @@ class Filter(object):
 
     def add_to_model(self, model):
         model.signals.append(self.alpha_signal)
-        model.filters.append(self)
+        dst = model._get_output_view(self.newsig)
+
+        model._operators.append(
+            sim.DotInc(self.alpha_signal, self.oldsig, dst,
+                       tag='transform'))
 
     def to_json(self):
         return {
