@@ -115,13 +115,30 @@ class Operator(object):
     #    used for reads until the next time step.
     updates = []
 
+    @property
+    def all_signals(self):
+        # -- Sanity check that no one has accidentally modified
+        #    these class variables, they should be empty
+        assert not Operator.reads
+        assert not Operator.sets
+        assert not Operator.incs
+        assert not Operator.updates
 
-    def init_signals(self, signals, dt):
+        return self.reads + self.sets + self.incs + self.updates
+
+    def init_sigdict(self, sigdict, dt):
         """
         Install any buffers into the signals view that
         this operator will need. Classes for nonlinearities
         that use extra buffers should create them here.
         """
+        for sig in self.all_signals:
+            if sig.base not in sigdict:
+                sigdict[sig.base] = np.zeros(
+                    sig.base.shape,
+                    dtype=sig.base.dtype,
+                    ) + getattr(sig.base, 'value', 0)
+
 
 
 class Reset(Operator):
@@ -206,18 +223,25 @@ class DotInc(Operator):
                 if inc.size == Y.size == 1:
                     inc = np.asarray(inc).reshape(Y.shape)
                 else:
-                    raise ValueError('shape mismatch', (inc.shape, Y.shape))
+                    raise ValueError('shape mismatch in %s %s x %s -> %s' % (
+                        self.tag, self.A, self.X, self.Y), (
+                        A.shape, X.shape, inc.shape, Y.shape))
             Y[...] += inc
 
         return step
 
 
-class BaseSimulator(object):
-    def __init__(self, operators, signals, dt):
-        self._signals = signals
+class Simulator(object):
+    def __init__(self, operators, dt):
         self.dt = dt
+        self.operators = operators
 
-        self.dg = self._init_dg(operators)
+        # -- map from Signal.base -> ndarray
+        self._sigdict = SignalDict()
+        for op in operators:
+            op.init_sigdict(self._sigdict, dt)
+
+        self.dg = self._init_dg()
         self._step_order = [node
             for node in nx.topological_sort(self.dg)
             if hasattr(node, 'make_step')]
@@ -226,11 +250,12 @@ class BaseSimulator(object):
 
         self.n_steps = 0
 
-    def _init_dg(self, operators, verbose=False):
+    def _init_dg(self, verbose=False):
+        operators = self.operators
         dg = nx.DiGraph()
 
         for op in operators:
-            dg.add_edges_from(itertools.product(op.reads, [op]))
+            dg.add_edges_from(itertools.product(op.reads + op.updates, [op]))
             dg.add_edges_from(itertools.product([op], op.sets + op.incs))
 
         # -- all views of a base object in a particular dictionary
@@ -317,16 +342,16 @@ class BaseSimulator(object):
                 self._signals[item][...] = val
 
             def __iter__(_):
-                return self._signals.__iter__()
+                return self._sigdict.__iter__()
 
             def __len__(_):
-                return self._signals.__len__()
+                return self._sigdict.__len__()
 
             def __str__(_):
                 import StringIO
                 sio = StringIO.StringIO()
-                for k in self._signals:
-                    print >> sio, k, self._signals[k]
+                for k in self._sigdict:
+                    print >> sio, k, self._sigdict[k]
                 return sio.getvalue()
 
         return Accessor()
