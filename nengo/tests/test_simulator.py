@@ -5,20 +5,19 @@ except ImportError:
 
 import numpy as np
 
-from nengo.core import Filter, Signal, SimModel
+from nengo.core import Filter, Signal
 from nengo.simulator import Simulator
 
 
 class TestSimulator(unittest.TestCase):
     def test_signal_indexing_1(self):
-        m = SimModel()
-        one = m.signal(n=1, name='a')
-        two = m.signal(n=2, name='b')
-        three = m.signal(n=3, name='c')
+        one = Signal(n=1, name='a')
+        two = Signal(n=2, name='b')
+        three = Signal(n=3, name='c')
 
-        m.filter(1, three[0:1], one)
-        m.filter(2.0, three[1:], two)
-        m.filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three)
+        f1 = Filter(1, three[0:1], one)
+        f2 = Filter(2.0, three[1:], two)
+        f3 = Filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three)
 
         sim = Simulator(m)
         sim.signals[three] = np.asarray([1, 2, 3])

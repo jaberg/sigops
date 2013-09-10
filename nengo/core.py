@@ -10,7 +10,10 @@ import copy
 import logging
 
 import numpy as np
+import simulator as sim
 
+
+logger = logging.getLogger(__name__)
 
 random_weight_rng = np.random.RandomState(12345)
 
