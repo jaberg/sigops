@@ -118,13 +118,31 @@ class Operator(object):
     #    used for reads until the next time step.
     updates = []
 
+    @property
+    def all_signals(self):
+        # -- Sanity check that no one has accidentally modified
+        #    these class variables, they should be empty
+        assert not Operator.reads
+        assert not Operator.sets
+        assert not Operator.incs
+        assert not Operator.updates
 
-    def init_signals(self, signals, dt):
+        return self.reads + self.sets + self.incs + self.updates
+
+
+    def init_sigdict(self, sigdict, dt):
         """
         Install any buffers into the signals view that
         this operator will need. Classes for nonlinearities
         that use extra buffers should create them here.
         """
+        for sig in self.all_signals:
+            if sig.base not in sigdict:
+                sigdict[sig.base] = np.zeros(
+                    sig.base.shape,
+                    dtype=sig.base.dtype,
+                    ) + getattr(sig.base, 'value', 0)
+
 
 
 class Reset(Operator):
@@ -209,32 +227,42 @@ class DotInc(Operator):
                 if inc.size == Y.size == 1:
                     inc = np.asarray(inc).reshape(Y.shape)
                 else:
-                    raise ValueError('shape mismatch', (inc.shape, Y.shape))
+                    raise ValueError('shape mismatch in %s %s x %s -> %s' % (
+                        self.tag, self.A, self.X, self.Y), (
+                        A.shape, X.shape, inc.shape, Y.shape))
             Y[...] += inc
 
         return step
 
 
-class BaseSimulator(object):
-    def __init__(self, operators, signals, model):
-        self._signals = signals
-        self.model = model
+class Simulator(object):
+    def __init__(self, model):
+        if not hasattr(model, 'dt'):
+            raise ValueError("Model does not appear to be built. "
+                             "See Model.prep_for_simulation.")
 
-        self.dg = self._init_dg(operators)
+        # -- map from Signal.base -> ndarray
+        self._sigdict = SignalDict()
+        self.model = model
+        for op in model._operators:
+            op.init_sigdict(self._sigdict, model.dt)
+
+        self.dg = self._init_dg()
         self._step_order = [node
             for node in networkx.topological_sort(self.dg)
             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self._signals, self.model.dt)
+        self._steps = [node.make_step(self._sigdict, model.dt)
             for node in self._step_order]
 
         self.n_steps = 0
         self.probe_outputs = dict((probe, []) for probe in model.probes)
 
-    def _init_dg(self, operators, verbose=False):
+    def _init_dg(self, verbose=False):
+        operators = self.model._operators
         dg = networkx.DiGraph()
 
         for op in operators:
-            dg.add_edges_from(itertools.product(op.reads, [op]))
+            dg.add_edges_from(itertools.product(op.reads + op.updates, [op]))
             dg.add_edges_from(itertools.product([op], op.sets + op.incs))
 
         # -- all views of a base object in a particular dictionary
@@ -316,33 +344,33 @@ class BaseSimulator(object):
         class Accessor(object):
             def __getitem__(_, item):
                 try:
-                    return self._signals[item]
+                    return self._sigdict[item]
                 except KeyError, e:
                     try:
-                        return self._signals[self.copied(item)]
+                        return self._sigdict[self.copied(item)]
                     except KeyError:
                         raise e  # -- re-raise the original KeyError
 
             def __setitem__(_, item, val):
                 try:
-                    self._signals[item][...] = val
+                    self._sigdict[item][...] = val
                 except KeyError, e:
                     try:
-                        self._signals[self.copied(item)][...] = val
+                        self._sigdict[self.copied(item)][...] = val
                     except KeyError:
                         raise e  # -- re-raise the original KeyError
 
             def __iter__(_):
-                return self._signals.__iter__()
+                return self._sigdict.__iter__()
 
             def __len__(_):
-                return self._signals.__len__()
+                return self._sigdict.__len__()
 
             def __str__(_):
                 import StringIO
                 sio = StringIO.StringIO()
-                for k in self._signals:
-                    print >> sio, k, self._signals[k]
+                for k in self._sigdict:
+                    print >> sio, k, self._sigdict[k]
                 return sio.getvalue()
 
         return Accessor()
@@ -355,7 +383,7 @@ class BaseSimulator(object):
         for probe in self.model.probes:
             period = int(probe.dt / self.model.dt)
             if self.n_steps % period == 0:
-                tmp = self._signals[probe.sig].copy()
+                tmp = self._sigdict[probe.sig].copy()
                 self.probe_outputs[probe].append(tmp)
 
         self.n_steps += 1
@@ -425,98 +453,3 @@ class BaseSimulator(object):
 
     def probe_data(self, probe):
         return np.asarray(self.probe_outputs[probe])
-
-
-class Simulator(BaseSimulator):
-    def __init__(self, model):
-        if not hasattr(model, 'dt'):
-            raise ValueError("Model does not appear to be built. "
-                             "See Model.prep_for_simulation.")
-
-        signals = SignalDict()
-
-        for sig in model.signals:
-            if hasattr(sig, 'value'):
-                if sig.base == sig:
-                    signals[sig] = np.asarray(sig.value)
-            else:
-                if sig.base == sig:
-                    signals[sig] = np.zeros(sig.n)
-
-        operators = []
-        with collect_operators_into(operators):
-
-            # -- set up output buffers for filters and transforms
-            output_stuff = {}
-            for filt in model.filters:
-                if filt.newsig.base not in output_stuff:
-                    output_stuff[filt.newsig.base] = core.Signal(
-                        filt.newsig.base.n,
-                        name=filt.newsig.base.name + '-out')
-                    signals[output_stuff[filt.newsig.base]] = \
-                        np.zeros(filt.newsig.base.n)
-                    Reset(output_stuff[filt.newsig.base])
-                    # -- N.B. this copy will be performed *after* the
-                    #    DotInc operators created below.
-                    Copy(src=output_stuff[filt.newsig.base],
-                         dst=filt.newsig.base,
-                         as_update=True,
-                         tag='back-copy %s' % str(filt.newsig.base))
-                if is_view(filt.newsig):
-                    output_stuff[filt.newsig] = filt.newsig.view_like_self_of(
-                        output_stuff[filt.newsig.base])
-                assert filt.newsig in output_stuff
-
-            for tf in model.transforms:
-                if tf.outsig.base not in output_stuff:
-                    output_stuff[tf.outsig.base] = core.Signal(
-                        tf.outsig.base.n,
-                        name=tf.outsig.base.name + '-out')
-                    signals[output_stuff[tf.outsig.base]] = \
-                        np.zeros(tf.outsig.base.n)
-                    Reset(output_stuff[tf.outsig.base])
-                    # -- N.B. this copy will be performed *after* the
-                    #    DotInc operators created below.
-                    Copy(src=output_stuff[tf.outsig.base],
-                         dst=tf.outsig.base,
-                         as_update=True,
-                         tag='back-copy %s' % str(tf.outsig.base))
-                if is_view(tf.outsig):
-                    output_stuff[tf.outsig] = tf.outsig.view_like_self_of(
-                        output_stuff[tf.outsig.base])
-                assert tf.outsig in output_stuff
-
-            # -- write to output buffers from filters
-            for filt in model.filters:
-                try:
-                    DotInc(filt.alpha_signal,
-                           filt.oldsig,
-                           output_stuff[filt.newsig],
-                           tag='filter')
-                except Exception, e:
-                    e.args = e.args + (filt.oldsig, filt.newsig)
-                    raise
-
-            # -- write to output buffers from transforms
-            for tf in model.transforms:
-                try:
-                    insig = decoder_outputs[tf.insig]
-                except KeyError:
-                    try:
-                        insig = output_currents[tf.insig]
-                    except KeyError:
-                        if tf.insig.base in decoder_outputs:
-                            insig = tf.insig.view_like_self_of(
-                                decoder_outputs[tf.insig.base])
-                        elif tf.insig.base in output_currents:
-                            insig = tf.insig.view_like_self_of(
-                                output_currents[tf.insig.base])
-                        else:
-                            raise Exception('what is going on?')
-
-                DotInc(tf.alpha_signal,
-                       insig,
-                       output_stuff[tf.outsig],
-                       tag='transform')
-
-        BaseSimulator.__init__(self, operators, signals, model)
