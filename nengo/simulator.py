@@ -20,6 +20,14 @@ def is_view(sig):
     return not is_base(sig)
 
 class SignalDict(dict):
+    """
+    Map from Signal -> ndarray
+
+    SignalDict overrides __getitem__ for two reasons:
+    1. so that scalars are returned as 0-d ndarrays
+    2. so that a SignalView lookup returns a views of its base
+
+    """
     def __getitem__(self, obj):
         if obj in self:
             return dict.__getitem__(self, obj)
@@ -47,7 +55,6 @@ class SignalDict(dict):
 
 
 class collect_operators_into(object):
-    lists = []
     """
     Within this context, operators that are constructed
     are, by default, appended to an `operators` list.
@@ -64,6 +71,10 @@ class collect_operators_into(object):
     and the Copy instances.
 
     """
+    # -- the list of `operators` lists to which we need to append
+    #    new operators when creating them.
+    lists = []
+
     def __init__(self, operators):
         if operators is None:
             operators = []
@@ -82,7 +93,11 @@ class collect_operators_into(object):
 
 
 class Operator(object):
-    # automatic staticmethod
+    """
+    Base class for operator instances understood by the reference simulator.
+    """
+
+    # -- N.B. automatically an @staticmethod
     def __new__(cls, *args, **kwargs):
         rval = super(Operator, cls).__new__(cls, *args, **kwargs)
         collect_operators_into.collect_operator(rval)
@@ -142,7 +157,6 @@ class Operator(object):
                     sig.base.shape,
                     dtype=sig.base.dtype,
                     ) + getattr(sig.base, 'value', 0)
-
 
 
 class Reset(Operator):
@@ -236,6 +250,8 @@ class DotInc(Operator):
 
 
 class Simulator(object):
+    """Reference simulator for models.
+    """
     def __init__(self, operators, probes, dt):
         self.dt = dt
         self.operators = operators
@@ -340,6 +356,15 @@ class Simulator(object):
 
     @property
     def signals(self):
+        """Support access to current ndarrays via `self.signals[sig]`.
+
+        Here `sig` can be a signal within the model used to generate this
+        simulator, even though that model was deepcopied in the process of
+        generating the simulator.
+
+        This property is also used to implement a pretty-printing algorithm so
+        that `print sim.signals` returns a multiline string.
+        """
         class Accessor(object):
             def __getitem__(_, item):
                 return self._signals[item]
@@ -363,6 +388,8 @@ class Simulator(object):
         return Accessor()
 
     def step(self):
+        """Advance the simulator by `self.model.dt` seconds.
+        """
         for step_fn in self._steps:
             step_fn()
 
@@ -375,19 +402,21 @@ class Simulator(object):
 
         self.n_steps += 1
 
-    def run(self, time):
+    def run(self, time_in_seconds):
         """Simulate for the given length of time."""
-        steps = int(time // self.model.dt)
+        steps = int(time_in_seconds // self.model.dt)
         logger.debug("Running %s for %f seconds, or %d steps",
-                     self.model.name, time, steps)
+                     self.model.name, time_in_seconds, steps)
         self.run_steps(steps)
 
     def run_steps(self, steps):
-        """Simulate for the given number of steps."""
+        """Simulate for the given number of `dt` steps."""
         for i in xrange(steps):
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
             self.step()
 
     def probe_data(self, probe):
+        """TODO
+        """
         return np.asarray(self.probe_outputs[probe])
