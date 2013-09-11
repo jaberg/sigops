@@ -297,11 +297,10 @@ class Probe(object):
 
 class Constant(Signal):
     """A signal meant to hold a fixed value"""
-    def __init__(self, n, value, name=None):
-        Signal.__init__(self, n, name=name)
+    def __init__(self, value, name=None):
         self.value = np.asarray(value)
-        # TODO: change constructor to get n from value
-        assert self.value.size == n
+
+        Signal.__init__(self, self.value.size, name=name)
 
     def __str__(self):
         if self.name is not None:
@@ -338,8 +337,7 @@ def is_constant(sig):
     """
     return isinstance(sig.base, Constant)
 
-
-class Transform(object):
+class Transform(object): #to be removed?
     """A linear transform from a decoded signal to the signals buffer"""
     def __init__(self, alpha, insig, outsig):
         alpha = np.asarray(alpha)
@@ -350,7 +348,7 @@ class Transform(object):
 
         name = insig.name + ">" + outsig.name + ".tf_alpha"
 
-        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
+        self.alpha_signal = Constant(alpha, name=name)
         self.insig = insig
         self.outsig = outsig
         if self.alpha_signal.size == 1:
@@ -399,7 +397,7 @@ class Transform(object):
         }
 
 
-class Filter(object):
+class Filter(object): #to be removed?
     """A linear transform from signals[t-1] to signals[t]"""
     def __init__(self, alpha, oldsig, newsig):
         if hasattr(newsig, 'value'):
@@ -408,7 +406,7 @@ class Filter(object):
 
         name = oldsig.name + ">" + newsig.name + ".f_alpha"
 
-        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
+        self.alpha_signal = Constant(alpha, name=name)
         self.oldsig = oldsig
         self.newsig = newsig
 
