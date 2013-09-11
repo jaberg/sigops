@@ -70,11 +70,11 @@ class Model(object):
                      dst=obj.base,
                      as_update=True,
                      tag='back-copy %s' % str(obj.base)))
-            
+
         if simulator.is_view(obj):
             self._next_signals[obj] = obj.view_like_self_of(
                 self._next_signals[obj.base])
-            
+
         return self._next_signals[obj]
 
     def __str__(self):
