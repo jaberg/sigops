@@ -244,11 +244,51 @@ class DotInc(Operator):
 
         return step
 
+class ProdUpdate(Operator):
+    """
+    Sets Y = A*X + B*Y
+    """
+    def __init__(self, A, X, B, Y, tag=None):
+        self.A = A
+        self.X = X
+        self.B = B
+        self.Y = Y
+        self.tag = tag
+
+        self.reads = [self.A, self.X, self.B]
+        self.updates = [self.Y]
+
+    def __str__(self):
+        return 'ProdUpdate(%s, %s, %s, %s -> %s "%s")' % (
+                str(self.A), str(self.X), str(self.B), str(self.Y), self.tag)
+
+    def make_step(self, dct, dt):
+        X = dct[self.X]
+        A = dct[self.A]
+        Y = dct[self.Y]
+        B = dct[self.B]
+
+        def step():
+            val = np.dot(A,X)
+            if val.shape != Y.shape:
+                if val.size == Y.size == 1:
+                    val = np.asarray(val).reshape(Y.shape)
+                else:
+                    raise ValueError('shape mismatch in %s (%s vs %s)' %
+                                     (self.tag, val.shape, Y.shape))
+
+            Y[...] *= B
+            Y[...] += val
+
+
+
+        return step
+
 
 class Simulator(object):
     """Reference simulator for models.
     """
-    def __init__(self, operators, dt):
+    def __init__(self, operators, dt=0.001):
         self.dt = dt
         self.operators = operators
 
@@ -261,7 +301,7 @@ class Simulator(object):
         self._step_order = [node
             for node in nx.topological_sort(self.dg)
             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self._signals, self.dt)
+        self._steps = [node.make_step(self._sigdict, self.dt)
             for node in self._step_order]
 
         self.n_steps = 0
@@ -361,10 +401,10 @@ class Simulator(object):
         """
         class Accessor(object):
             def __getitem__(_, item):
-                return self._signals[item]
+                return self._sigdict[item]
 
             def __setitem__(_, item, val):
-                self._signals[item][...] = val
+                self._sigdict[item][...] = val
 
             def __iter__(_):
                 return self._sigdict.__iter__()

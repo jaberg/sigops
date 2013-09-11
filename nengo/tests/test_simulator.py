@@ -5,21 +5,25 @@ except ImportError:
 
 import numpy as np
 
-from nengo.core import Filter, Signal
-from nengo.simulator import Simulator
+import nengo.simulator as simulator
+import nengo.core as core
 
 
 class TestSimulator(unittest.TestCase):
     def test_signal_indexing_1(self):
-        one = Signal(n=1, name='a')
-        two = Signal(n=2, name='b')
-        three = Signal(n=3, name='c')
+        one = core.Signal(n=1, name='a')
+        two = core.Signal(n=2, name='b')
+        three = core.Signal(n=3, name='c')
+        three_out = core.Signal(n=3, name='c-out')
 
-        f1 = Filter(1, three[0:1], one)
-        f2 = Filter(2.0, three[1:], two)
-        f3 = Filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three)
+        operators = []
+        operators += [simulator.Reset(three_out)]
+        operators += [simulator.Copy(src=three_out, dst=three, as_update=True)]
+        operators += [simulator.ProdUpdate(core.Constant(1), three[0:1], core.Constant(0), one)]
+        operators += [simulator.ProdUpdate(core.Constant(2.0), three[1:], core.Constant(0), two)]
+        operators += [simulator.DotInc(core.Constant([[0,0,1], [0,1,0], [1,0,0]]), three, three_out)]
 
-        sim = Simulator(m)
+        sim = simulator.Simulator(operators)
         sim.signals[three] = np.asarray([1, 2, 3])
         sim.step()
         self.assertTrue(np.all(sim.signals[one] == 1))
