@@ -259,11 +259,10 @@ class Signal(SignalView):
 
 class Constant(Signal):
     """A signal meant to hold a fixed value"""
-    def __init__(self, n, value, name=None):
-        Signal.__init__(self, n, name=name)
+    def __init__(self, value, name=None):
         self.value = np.asarray(value)
-        # TODO: change constructor to get n from value
-        assert self.value.size == n
+
+        Signal.__init__(self, self.value.size, name=name)
 
     def __str__(self):
         if self.name is not None:
@@ -299,107 +298,3 @@ def is_constant(sig):
     Return True iff `sig` is (or is a view of) a Constant signal.
     """
     return isinstance(sig.base, Constant)
-
-
-class Transform(object):
-    """A linear transform from a decoded signal to the signals buffer"""
-    def __init__(self, alpha, insig, outsig):
-        alpha = np.asarray(alpha)
-        if hasattr(outsig, 'value'):
-            raise TypeError('transform destination is constant')
-        if is_constant(insig):
-            raise TypeError('constant input (use filter instead)')
-
-        name = insig.name + ">" + outsig.name + ".tf_alpha"
-
-        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
-        self.insig = insig
-        self.outsig = outsig
-        if self.alpha_signal.size == 1:
-            if self.insig.shape != self.outsig.shape:
-                raise ShapeMismatch()
-        else:
-            if self.alpha_signal.shape != (
-                    self.outsig.shape + self.insig.shape):
-                raise ShapeMismatch(
-                        self.alpha_signal.shape,
-                        self.insig.shape,
-                        self.outsig.shape,
-                        )
-
-
-    def __str__(self):
-        return ("Transform (id " + str(id(self)) + ")"
-                " from " + str(self.insig) + " to " + str(self.outsig))
-
-    def __repr__(self):
-        return str(self)
-
-    @property
-    def alpha(self):
-        return self.alpha_signal.value
-
-    @alpha.setter
-    def alpha(self, value):
-        self.alpha_signal.value[...] = value
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'alpha': self.alpha.tolist(),
-            'insig': self.insig.name,
-            'outsig': self.outsig.name,
-        }
-
-
-class Filter(object):
-    """A linear transform from signals[t-1] to signals[t]"""
-    def __init__(self, alpha, oldsig, newsig):
-        if hasattr(newsig, 'value'):
-            raise TypeError('filter destination is constant')
-        alpha = np.asarray(alpha)
-
-        name = oldsig.name + ">" + newsig.name + ".f_alpha"
-
-        self.alpha_signal = Constant(n=alpha.size, value=alpha, name=name)
-        self.oldsig = oldsig
-        self.newsig = newsig
-
-        if self.alpha_signal.size == 1:
-            if self.oldsig.shape != self.newsig.shape:
-                raise ShapeMismatch(
-                        self.alpha_signal.shape,
-                        self.oldsig.shape,
-                        self.newsig.shape,
-                        )
-        else:
-            if self.alpha_signal.shape != (
-                    self.newsig.shape + self.oldsig.shape):
-                raise ShapeMismatch(
-                        self.alpha_signal.shape,
-                        self.oldsig.shape,
-                        self.newsig.shape,
-                        )
-
-    def __str__(self):
-        return ("Filter (id " + str(id(self)) + ")"
-                " from " + str(self.oldsig) + " to " + str(self.newsig))
-
-    def __repr__(self):
-        return str(self)
-
-    @property
-    def alpha(self):
-        return self.alpha_signal.value
-
-    @alpha.setter
-    def alpha(self, value):
-        self.alpha_signal.value[...] = value
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'alpha': self.alpha.tolist(),
-            'oldsig': self.oldsig.name,
-            'newsig': self.newsig.name,
-        }
