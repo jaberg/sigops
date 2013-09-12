@@ -6,22 +6,25 @@ except ImportError:
 import numpy as np
 
 import nengo
-from nengo.core import Filter, Signal
-from nengo.simulator import Simulator
+import nengo.simulator as simulator
+import nengo.core as core
 
 
 class TestSimulator(unittest.TestCase):
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
-        one = m.add(Signal(n=1, name='a'))
-        two = m.add(Signal(n=2, name='b'))
-        three = m.add(Signal(n=3, name='c'))
+        one = m.add(core.Signal(n=1, name='a'))
+        two = m.add(core.Signal(n=2, name='b'))
+        three = m.add(core.Signal(n=3, name='c'))
 
-        m.add(Filter(1, three[0:1], one))
-        m.add(Filter(2.0, three[1:], two))
-        m.add(Filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three))
+#        m.add(core.Filter(1, three[0:1], one))
+#        m.add(core.Filter(2.0, three[1:], two))
+#        m.add(core.Filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three))
+        m._operators += [simulator.ProdUpdate(core.Constant(1), three[0:1], core.Constant(0), one)]
+        m._operators += [simulator.ProdUpdate(core.Constant(2.0), three[1:], core.Constant(0), two)]
+        m._operators += [simulator.DotInc(core.Constant([[0,0,1], [0,1,0], [1,0,0]]), three, m._get_output_view(three))]
 
-        sim = m.simulator(sim_class=Simulator)
+        sim = m.simulator(sim_class=simulator.Simulator)
         memo = sim.model.memo
         sim.signals[sim.copied(three)] = np.asarray([1, 2, 3])
         sim.step()

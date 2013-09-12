@@ -337,122 +337,122 @@ def is_constant(sig):
     """
     return isinstance(sig.base, Constant)
 
-class Transform(object): #to be removed?
-    """A linear transform from a decoded signal to the signals buffer"""
-    def __init__(self, alpha, insig, outsig):
-        alpha = np.asarray(alpha)
-        if hasattr(outsig, 'value'):
-            raise TypeError('transform destination is constant')
-        if is_constant(insig):
-            raise TypeError('constant input (use filter instead)')
-
-        name = insig.name + ">" + outsig.name + ".tf_alpha"
-
-        self.alpha_signal = Constant(alpha, name=name)
-        self.insig = insig
-        self.outsig = outsig
-        if self.alpha_signal.size == 1:
-            if self.insig.shape != self.outsig.shape:
-                raise ShapeMismatch()
-        else:
-            if self.alpha_signal.shape != (
-                    self.outsig.shape + self.insig.shape):
-                raise ShapeMismatch(
-                        self.alpha_signal.shape,
-                        self.insig.shape,
-                        self.outsig.shape,
-                        )
-
-    def __str__(self):
-        return ("Transform (id " + str(id(self)) + ")"
-                " from " + str(self.insig) + " to " + str(self.outsig))
-
-    def __repr__(self):
-        return str(self)
-
-    @property
-    def alpha(self):
-        return self.alpha_signal.value
-
-    @alpha.setter
-    def alpha(self, value):
-        self.alpha_signal.value[...] = value
-
-    def add_to_model(self, model):
-        model.signals.append(self.alpha_signal)
-        dst = model._get_output_view(self.outsig)
-
-        insig = self.insig
-
-        model._operators.append(
-            sim.DotInc(self.alpha_signal, insig, dst,
-                       tag='transform'))
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'alpha': self.alpha.tolist(),
-            'insig': self.insig.name,
-            'outsig': self.outsig.name,
-        }
-
-
-class Filter(object): #to be removed?
-    """A linear transform from signals[t-1] to signals[t]"""
-    def __init__(self, alpha, oldsig, newsig):
-        if hasattr(newsig, 'value'):
-            raise TypeError('filter destination is constant')
-        alpha = np.asarray(alpha)
-
-        name = oldsig.name + ">" + newsig.name + ".f_alpha"
-
-        self.alpha_signal = Constant(alpha, name=name)
-        self.oldsig = oldsig
-        self.newsig = newsig
-
-        if self.alpha_signal.size == 1:
-            if self.oldsig.shape != self.newsig.shape:
-                raise ShapeMismatch(
-                        self.alpha_signal.shape,
-                        self.oldsig.shape,
-                        self.newsig.shape,
-                        )
-        else:
-            if self.alpha_signal.shape != (
-                    self.newsig.shape + self.oldsig.shape):
-                raise ShapeMismatch(
-                        self.alpha_signal.shape,
-                        self.oldsig.shape,
-                        self.newsig.shape,
-                        )
-
-    def __str__(self):
-        return ("Filter (id " + str(id(self)) + ")"
-                " from " + str(self.oldsig) + " to " + str(self.newsig))
-
-    def __repr__(self):
-        return str(self)
-
-    @property
-    def alpha(self):
-        return self.alpha_signal.value
-
-    @alpha.setter
-    def alpha(self, value):
-        self.alpha_signal.value[...] = value
-
-    def add_to_model(self, model):
-        model.signals.append(self.alpha_signal)
-        dst = model._get_output_view(self.newsig)
-
-        model._operators.append(
-            sim.DotInc(self.alpha_signal, self.oldsig, dst,
-                       tag='transform'))
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'alpha': self.alpha.tolist(),
-            'oldsig': self.oldsig.name,
-            'newsig': self.newsig.name,
-        }
+#class Transform(object): #to be removed?
+#    """A linear transform from a decoded signal to the signals buffer"""
+#    def __init__(self, alpha, insig, outsig):
+#        alpha = np.asarray(alpha)
+#        if hasattr(outsig, 'value'):
+#            raise TypeError('transform destination is constant')
+#        if is_constant(insig):
+#            raise TypeError('constant input (use filter instead)')
+#
+#        name = insig.name + ">" + outsig.name + ".tf_alpha"
+#
+#        self.alpha_signal = Constant(alpha, name=name)
+#        self.insig = insig
+#        self.outsig = outsig
+#        if self.alpha_signal.size == 1:
+#            if self.insig.shape != self.outsig.shape:
+#                raise ShapeMismatch()
+#        else:
+#            if self.alpha_signal.shape != (
+#                    self.outsig.shape + self.insig.shape):
+#                raise ShapeMismatch(
+#                        self.alpha_signal.shape,
+#                        self.insig.shape,
+#                        self.outsig.shape,
+#                        )
+#
+#    def __str__(self):
+#        return ("Transform (id " + str(id(self)) + ")"
+#                " from " + str(self.insig) + " to " + str(self.outsig))
+#
+#    def __repr__(self):
+#        return str(self)
+#
+#    @property
+#    def alpha(self):
+#        return self.alpha_signal.value
+#
+#    @alpha.setter
+#    def alpha(self, value):
+#        self.alpha_signal.value[...] = value
+#
+#    def add_to_model(self, model):
+#        model.signals.append(self.alpha_signal)
+#        dst = model._get_output_view(self.outsig)
+#
+#        insig = self.insig
+#
+#        model._operators.append(
+#            sim.DotInc(self.alpha_signal, insig, dst,
+#                       tag='transform'))
+#
+#    def to_json(self):
+#        return {
+#            '__class__': self.__module__ + '.' + self.__class__.__name__,
+#            'alpha': self.alpha.tolist(),
+#            'insig': self.insig.name,
+#            'outsig': self.outsig.name,
+#        }
+#
+#
+#class Filter(object): #to be removed?
+#    """A linear transform from signals[t-1] to signals[t]"""
+#    def __init__(self, alpha, oldsig, newsig):
+#        if hasattr(newsig, 'value'):
+#            raise TypeError('filter destination is constant')
+#        alpha = np.asarray(alpha)
+#
+#        name = oldsig.name + ">" + newsig.name + ".f_alpha"
+#
+#        self.alpha_signal = Constant(alpha, name=name)
+#        self.oldsig = oldsig
+#        self.newsig = newsig
+#
+#        if self.alpha_signal.size == 1:
+#            if self.oldsig.shape != self.newsig.shape:
+#                raise ShapeMismatch(
+#                        self.alpha_signal.shape,
+#                        self.oldsig.shape,
+#                        self.newsig.shape,
+#                        )
+#        else:
+#            if self.alpha_signal.shape != (
+#                    self.newsig.shape + self.oldsig.shape):
+#                raise ShapeMismatch(
+#                        self.alpha_signal.shape,
+#                        self.oldsig.shape,
+#                        self.newsig.shape,
+#                        )
+#
+#    def __str__(self):
+#        return ("Filter (id " + str(id(self)) + ")"
+#                " from " + str(self.oldsig) + " to " + str(self.newsig))
+#
+#    def __repr__(self):
+#        return str(self)
+#
+#    @property
+#    def alpha(self):
+#        return self.alpha_signal.value
+#
+#    @alpha.setter
+#    def alpha(self, value):
+#        self.alpha_signal.value[...] = value
+#
+#    def add_to_model(self, model):
+#        model.signals.append(self.alpha_signal)
+#        dst = model._get_output_view(self.newsig)
+#
+#        model._operators.append(
+#            sim.DotInc(self.alpha_signal, self.oldsig, dst,
+#                       tag='transform'))
+#
+#    def to_json(self):
+#        return {
+#            '__class__': self.__module__ + '.' + self.__class__.__name__,
+#            'alpha': self.alpha.tolist(),
+#            'oldsig': self.oldsig.name,
+#            'newsig': self.newsig.name,
+#        }
