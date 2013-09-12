@@ -290,8 +290,6 @@ class ProdUpdate(Operator):
             Y[...] *= B
             Y[...] += val
 
-
-
         return step
 
 
@@ -362,6 +360,10 @@ class Simulator(object):
         if len(sets) >= 2:
             for node, other in itertools.combinations(sets, 2):
                 assert not node.shares_memory_with(other)
+
+        # --- assert that any node that is incremented is also set/updated
+        for node in incs:
+            assert len(sets[node]+ups[node]) > 0, (node)
 
         # -- Scheduling algorithm for serial evaluation:
         #    1) All sets on a given base signal
