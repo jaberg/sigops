@@ -194,7 +194,7 @@ class Model(object):
             obj.add_to_model(self)
             return obj
         except AttributeError:
-            raise TypeError("Object not recognized as a Nengo object.")
+            raise TypeError("Error in %s.add_to_model."%obj)
 
     def get(self, target, default=None):
         if isinstance(target, str):
