@@ -16,9 +16,6 @@ class TestSimulator(unittest.TestCase):
         three = core.Signal(n=3, name='c')
         three_out = core.Signal(n=3, name='c-out')
 
-#        m.add(core.Filter(1, three[0:1], one))
-#        m.add(core.Filter(2.0, three[1:], two))
-#        m.add(core.Filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three))
         operators = []
         operators += [simulator.Reset(three_out)]
         operators += [simulator.Copy(src=three_out, dst=three, as_update=True)]
