@@ -14,14 +14,11 @@ class TestSimulator(unittest.TestCase):
         one = base.Signal(n=1, name='a')
         two = base.Signal(n=2, name='b')
         three = base.Signal(n=3, name='c')
-        three_out = base.Signal(n=3, name='c-out')
 
         operators = []
-        operators += [simulator.Reset(three_out)]
-        operators += [simulator.Copy(src=three_out, dst=three, as_update=True)]
         operators += [simulator.ProdUpdate(base.Constant(1), three[0:1], base.Constant(0), one)]
         operators += [simulator.ProdUpdate(base.Constant(2.0), three[1:], base.Constant(0), two)]
-        operators += [simulator.DotInc(base.Constant([[0,0,1], [0,1,0], [1,0,0]]), three, three_out)]
+        operators += [simulator.ProdUpdate(base.Constant([0,0,0]), base.Constant(0), base.Constant([[0,0,1],[0,1,0],[1,0,0]]), three)]
 
         sim = simulator.Simulator(operators)
         sim.signals[three] = np.asarray([1, 2, 3])
