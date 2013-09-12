@@ -247,7 +247,7 @@ class DotInc(Operator):
             Y[...] += inc
 
         return step
-    
+
 class ProdUpdate(Operator):
     """
     Sets Y = A*X + B*Y
@@ -278,13 +278,13 @@ class ProdUpdate(Operator):
                 if val.size == Y.size == 1:
                     val = np.asarray(val).reshape(Y.shape)
                 else:
-                    raise ValueError('shape mismatch in %s (%s vs %s)' % 
+                    raise ValueError('shape mismatch in %s (%s vs %s)' %
                                      (self.tag, val.shape, Y.shape))
-            
+
             Y[...] *= B
             Y[...] += val
 
-            
+
 
         return step
 
