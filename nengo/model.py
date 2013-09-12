@@ -144,7 +144,7 @@ class Model(object):
     def prep_for_simulation(model, dt):
         model.name = model.name + ", dt=%f" % dt
         model.dt = dt
-        model._operators += [simulator.ProdUpdate(core.Constant(dt), model.one, 
+        model._operators += [simulator.ProdUpdate(core.Constant(dt), model.one,
                                                   core.Constant(1), model.t)]
 
         # Sort all objects by name
@@ -190,20 +190,11 @@ class Model(object):
     ### Model manipulation
 
     def add(self, obj):
-        if 'core' in obj.__module__:
+        try:
             obj.add_to_model(self)
             return obj
-
-        if hasattr(obj, 'name') and self.objs.has_key(obj.name):
-            raise ValueError("Something called " + obj.name + " already exists."
-                             " Please choose a different name.")
-
-        if 'core' in obj.__module__:
-            obj.add_to_model(self)
-        else:
-            raise TypeError("Object not recognized as a Nengo object. ")
-
-        return obj
+        except AttributeError:
+            raise TypeError("Object not recognized as a Nengo object.")
 
     def get(self, target, default=None):
         if isinstance(target, str):
