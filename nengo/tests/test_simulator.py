@@ -17,9 +17,6 @@ class TestSimulator(unittest.TestCase):
         two = m.add(core.Signal(n=2, name='b'))
         three = m.add(core.Signal(n=3, name='c'))
 
-#        m.add(core.Filter(1, three[0:1], one))
-#        m.add(core.Filter(2.0, three[1:], two))
-#        m.add(core.Filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three))
         m._operators += [simulator.ProdUpdate(core.Constant(1), three[0:1], core.Constant(0), one)]
         m._operators += [simulator.ProdUpdate(core.Constant(2.0), three[1:], core.Constant(0), two)]
         m._operators += [simulator.DotInc(core.Constant([[0,0,1], [0,1,0], [1,0,0]]), three, m._get_output_view(three))]
