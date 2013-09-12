@@ -247,7 +247,7 @@ class DotInc(Operator):
             Y[...] += inc
 
         return step
-    
+
 class ProdUpdate(Operator):
     """
     Sets Y = A*X + B*Y
@@ -278,13 +278,13 @@ class ProdUpdate(Operator):
                 if val.size == Y.size == 1:
                     val = np.asarray(val).reshape(Y.shape)
                 else:
-                    raise ValueError('shape mismatch in %s (%s vs %s)' % 
+                    raise ValueError('shape mismatch in %s (%s vs %s)' %
                                      (self.tag, val.shape, Y.shape))
-            
+
             Y[...] *= B
             Y[...] += val
 
-            
+
 
         return step
 
@@ -292,10 +292,10 @@ class ProdUpdate(Operator):
 class Simulator(object):
     """Reference simulator for models.
     """
-    def __init__(self, operators, probes, dt):
+    def __init__(self, operators, probes=None, dt=0.001):
         self.dt = dt
         self.operators = operators
-        self.probes = probes
+        self.probes = probes if probes is not None else []
 
         # -- map from Signal.base -> ndarray
         self._sigdict = SignalDict()
@@ -306,7 +306,7 @@ class Simulator(object):
         self._step_order = [node
             for node in networkx.topological_sort(self.dg)
             if hasattr(node, 'make_step')]
-        self._steps = [node.make_step(self._signals, self.dt)
+        self._steps = [node.make_step(self._sigdict, self.dt)
             for node in self._step_order]
 
         self.n_steps = 0
@@ -407,10 +407,10 @@ class Simulator(object):
         """
         class Accessor(object):
             def __getitem__(_, item):
-                return self._signals[item]
+                return self._sigdict[item]
 
             def __setitem__(_, item, val):
-                self._signals[item][...] = val
+                self._sigdict[item][...] = val
 
             def __iter__(_):
                 return self._sigdict.__iter__()
