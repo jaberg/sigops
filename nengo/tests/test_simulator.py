@@ -15,10 +15,23 @@ class TestSimulator(unittest.TestCase):
         two = core.Signal(n=2, name='b')
         three = core.Signal(n=3, name='c')
 
+        tmp = core.Signal(n=3, name='tmp')
+
         operators = []
         operators += [simulator.ProdUpdate(core.Constant(1), three[0:1], core.Constant(0), one)]
         operators += [simulator.ProdUpdate(core.Constant(2.0), three[1:], core.Constant(0), two)]
-        operators += [simulator.ProdUpdate(core.Constant([0,0,0]), core.Constant(0), core.Constant([[0,0,1],[0,1,0],[1,0,0]]), three)]
+        operators += [
+            simulator.Reset(tmp),
+            simulator.DotInc(
+                core.Constant([[0,0,1],[0,1,0],[1,0,0]]),
+                three,
+                tmp),
+            simulator.ProdUpdate(
+                core.Constant(1),
+                tmp,
+                core.Constant(0),
+                three),
+            ]
 
         sim = simulator.Simulator(operators)
         sim.signals[three] = np.asarray([1, 2, 3])
