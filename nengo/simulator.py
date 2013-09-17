@@ -252,7 +252,7 @@ class DotInc(Operator):
 
 class ProdUpdate(Operator):
     """
-    Sets Y = A*X + B*Y
+    Sets Y <- dot(A, X) + B * Y
     """
     def __init__(self, A, X, B, Y, tag=None):
         self.A = A
@@ -282,8 +282,7 @@ class ProdUpdate(Operator):
                 else:
                     raise ValueError('shape mismatch in %s (%s vs %s)' %
                                      (self.tag, val, Y))
-
-            Y[...] = np.dot(B,Y)
+            Y[...] *= B
             Y[...] += val
 
         return step
