@@ -177,7 +177,8 @@ class Model(object):
                 return self.aliases[target]
             elif self.objs.has_key(target):
                 return self.objs[target]
-            logger.error("Cannot find %s in model %s.", target, self.name)
+            if default is None:
+                logger.error("Cannot find %s in model %s.", target, self.name)
             return default
 
         return target
