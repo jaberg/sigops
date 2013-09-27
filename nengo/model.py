@@ -1,6 +1,6 @@
 import codecs
+from collections import OrderedDict
 import copy
-import inspect
 import json
 import logging
 import pickle
@@ -28,7 +28,7 @@ class Model(object):
 
         self.objs = {}
         self.aliases = {}
-        self.probed = {}
+        self.probed = OrderedDict()
         self.signal_probes = []
 
         self.name = name + ''  # -- make self.name a string, raise error otw
