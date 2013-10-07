@@ -37,8 +37,10 @@ class TestSimulator(unittest.TestCase):
 
         tmp = m.add(Signal(n=3, name='tmp'))
 
-        m._operators += [simulator.ProdUpdate(core.Constant(1), three[0:1], core.Constant(0), one)]
-        m._operators += [simulator.ProdUpdate(core.Constant(2.0), three[1:], core.Constant(0), two)]
+        m._operators += [simulator.ProdUpdate(
+            core.Constant(1), three[0:1], core.Constant(0), one)]
+        m._operators += [simulator.ProdUpdate(
+            core.Constant(2.0), three[1:], core.Constant(0), two)]
         m._operators += [
             simulator.Reset(tmp),
             simulator.DotInc(
@@ -50,15 +52,15 @@ class TestSimulator(unittest.TestCase):
 
         sim = m.simulator(sim_class=simulator.Simulator)
         memo = sim.model.memo
-        sim.signals[sim.copied(three)] = np.asarray([1, 2, 3])
+        sim.signals[sim.get(three)] = np.asarray([1, 2, 3])
         sim.step()
-        self.assertTrue(np.all(sim.signals[sim.copied(one)] == 1))
-        self.assertTrue(np.all(sim.signals[sim.copied(two)] == [4, 6]))
-        self.assertTrue(np.all(sim.signals[sim.copied(three)] == [3, 2, 1]))
+        self.assertTrue(np.all(sim.signals[sim.get(one)] == 1))
+        self.assertTrue(np.all(sim.signals[sim.get(two)] == [4, 6]))
+        self.assertTrue(np.all(sim.signals[sim.get(three)] == [3, 2, 1]))
         sim.step()
-        self.assertTrue(np.all(sim.signals[sim.copied(one)] == 3))
-        self.assertTrue(np.all(sim.signals[sim.copied(two)] == [4, 2]))
-        self.assertTrue(np.all(sim.signals[sim.copied(three)] == [1, 2, 3]))
+        self.assertTrue(np.all(sim.signals[sim.get(one)] == 3))
+        self.assertTrue(np.all(sim.signals[sim.get(two)] == [4, 2]))
+        self.assertTrue(np.all(sim.signals[sim.get(three)] == [1, 2, 3]))
 
 
 if __name__ == "__main__":

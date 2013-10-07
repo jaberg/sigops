@@ -8,7 +8,6 @@ import itertools
 from collections import defaultdict
 import time
 
-import networkx
 import networkx as nx
 import numpy as np
 
@@ -308,7 +307,7 @@ class Simulator(object):
 
         self.dg = self._init_dg()
         self._step_order = [node
-            for node in networkx.topological_sort(self.dg)
+            for node in nx.topological_sort(self.dg)
             if hasattr(node, 'make_step')]
         self._steps = [node.make_step(self._sigdict, model.dt)
             for node in self._step_order]
@@ -318,7 +317,7 @@ class Simulator(object):
 
     def _init_dg(self, verbose=False):
         operators = self.model._operators
-        dg = networkx.DiGraph()
+        dg = nx.DiGraph()
 
         for op in operators:
             dg.add_edges_from(itertools.product(op.reads + op.updates, [op]))
@@ -423,7 +422,7 @@ class Simulator(object):
                     return self._sigdict[item]
                 except KeyError, e:
                     try:
-                        return self._sigdict[self.copied(item)]
+                        return self._sigdict[self.model.memo[id(item)]]
                     except KeyError:
                         raise e  # -- re-raise the original KeyError
 
@@ -432,7 +431,7 @@ class Simulator(object):
                     self._sigdict[item][...] = val
                 except KeyError, e:
                     try:
-                        self._sigdict[self.copied(item)][...] = val
+                        self._sigdict[self.model.memo[id(item)]][...] = val
                     except KeyError:
                         raise e  # -- re-raise the original KeyError
 
@@ -466,7 +465,7 @@ class Simulator(object):
 
         self.n_steps += 1
 
-    def copied(self, obj):
+    def get(self, obj):
         """Get the simulator's copy of a model object.
 
         Parameters
@@ -481,15 +480,20 @@ class Simulator(object):
 
         Examples
         --------
-        Manually set a raw signal value to ``5`` in the simulator
-        (advanced usage). [TODO: better example]
+        Get the simulator's version of an ensemble
+        in order to plot tuning curves
 
         >>> model = nengo.Model()
-        >>> foo = m.add(Signal(n=1))
+        >>> model.make_ensemble("A", nengo.LIF(4), 1)
         >>> sim = model.simulator()
-        >>> sim.signals[sim.copied(foo)] = np.asarray([5])
+        >>> A = sim.get("A")
+        >>> from nengo.helpers import tuning_curves
+        >>> print tuning_curves(A)
         """
-        return self.model.memo[id(obj)]
+        toret = self.model.get(obj, "NotFound")
+        if toret == "NotFound":
+            toret = self.model.memo[id(obj)]
+        return toret
 
     def reset(self):
         """TODO"""
