@@ -8,7 +8,6 @@ import itertools
 from collections import defaultdict
 import time
 
-import networkx
 import networkx as nx
 import numpy as np
 
@@ -307,7 +306,7 @@ class Simulator(object):
 
         self.dg = self._init_dg()
         self._step_order = [node
-            for node in networkx.topological_sort(self.dg)
+            for node in nx.topological_sort(self.dg)
             if hasattr(node, 'make_step')]
         self._steps = [node.make_step(self._sigdict, self.dt)
             for node in self._step_order]
@@ -317,7 +316,7 @@ class Simulator(object):
 
     def _init_dg(self, verbose=False):
         operators = self.operators
-        dg = networkx.DiGraph()
+        dg = nx.DiGraph()
 
         for op in operators:
             dg.add_edges_from(itertools.product(op.reads + op.updates, [op]))

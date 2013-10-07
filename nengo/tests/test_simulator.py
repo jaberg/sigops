@@ -18,8 +18,10 @@ class TestSimulator(unittest.TestCase):
         tmp = core.Signal(n=3, name='tmp')
 
         operators = []
-        operators += [simulator.ProdUpdate(core.Constant(1), three[0:1], core.Constant(0), one)]
-        operators += [simulator.ProdUpdate(core.Constant(2.0), three[1:], core.Constant(0), two)]
+        operators += [simulator.ProdUpdate(
+            core.Constant(1), three[0:1], core.Constant(0), one)]
+        operators += [simulator.ProdUpdate(
+            core.Constant(2.0), three[1:], core.Constant(0), two)]
         operators += [
             simulator.Reset(tmp),
             simulator.DotInc(
