@@ -7,7 +7,7 @@ import pickle
 import os.path
 import numpy as np
 
-from . import core
+from . import builder
 from . import objects
 from . import simulator
 
@@ -34,9 +34,9 @@ class Model(object):
         self.name = name + ''  # -- make self.name a string, raise error otw
         self.seed = seed
 
-        self.t = self.add(core.Signal(name='t'))
-        self.steps = self.add(core.Signal(name='steps'))
-        self.one = self.add(core.Constant([1.0], name='one'))
+        self.t = self.add(builder.Signal(name='t'))
+        self.steps = self.add(builder.Signal(name='steps'))
+        self.one = self.add(builder.Constant([1.0], name='one'))
 
         # Automatically probe these
         self.probe(self.t)
@@ -44,7 +44,7 @@ class Model(object):
 
         # -- steps counts by 1.0
         self._operators += [simulator.ProdUpdate(
-                core.Constant(1), self.one, core.Constant(1), self.steps)]
+                builder.Constant(1), self.one, builder.Constant(1), self.steps)]
 
         self._rng = None
 
@@ -123,8 +123,8 @@ class Model(object):
     def prep_for_simulation(model, dt):
         model.name = model.name + ", dt=%f" % dt
         model.dt = dt
-        model._operators += [simulator.ProdUpdate(core.Constant(dt), model.one,
-                                                  core.Constant(1), model.t)]
+        model._operators += [simulator.ProdUpdate(builder.Constant(dt), model.one,
+                                                  builder.Constant(1), model.t)]
 
         # Sort all objects by name
         all_objs = sorted(model.objs.values(), key=lambda o: o.name)
@@ -137,7 +137,7 @@ class Model(object):
         # 2. Then probes
         logger.info("Building probes")
         for target in model.probed:
-            if not isinstance(model.probed[target], core.Probe):
+            if not isinstance(model.probed[target], builder.Probe):
                 model.probed[target].build(model=model, dt=dt)
                 model.probed[target] = model.probed[target].probe
 
@@ -226,7 +226,7 @@ class Model(object):
             logger.warning("%s is not in model %s.", str(target), self.name)
             return
 
-        if 'core' in obj.__module__:
+        if 'builder' in obj.__module__:
             obj.remove_from_model(self)
         else:
             for k, v in self.objs.iteritems():
@@ -251,7 +251,7 @@ class Model(object):
     # Model creation methods
 
     def probe(self, target, sample_every=0.001, filter=None):
-        if core.is_signal(target):
+        if builder.is_signal(target):
             p = core.Probe(target, sample_every)
             self.add(p)
 
