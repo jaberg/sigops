@@ -7,7 +7,7 @@ import numpy as np
 
 import nengo
 import nengo.simulator as simulator
-import nengo.core as core
+from nengo.builder import Signal, Constant
 
 
 class TestSimulator(unittest.TestCase):
@@ -31,20 +31,20 @@ class TestSimulator(unittest.TestCase):
 
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
-        one = m.add(core.Signal(n=1, name='a'))
-        two = m.add(core.Signal(n=2, name='b'))
-        three = m.add(core.Signal(n=3, name='c'))
+        one = m.add(Signal(n=1, name='a'))
+        two = m.add(Signal(n=2, name='b'))
+        three = m.add(Signal(n=3, name='c'))
 
         tmp = m.add(Signal(n=3, name='tmp'))
 
         m._operators += [simulator.ProdUpdate(
-            core.Constant(1), three[0:1], core.Constant(0), one)]
+            Constant(1), three[0:1], Constant(0), one)]
         m._operators += [simulator.ProdUpdate(
-            core.Constant(2.0), three[1:], core.Constant(0), two)]
+            Constant(2.0), three[1:], Constant(0), two)]
         m._operators += [
             simulator.Reset(tmp),
             simulator.DotInc(
-                core.Constant([[0,0,1],[0,1,0],[1,0,0]]),
+                Constant([[0,0,1],[0,1,0],[1,0,0]]),
                 three,
                 tmp),
             simulator.Copy(src=tmp, dst=three, as_update=True),
