@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class Model(object):
 
-    def __init__(self, name, seed=None, fixed_seed=None):
+    def __init__(self, name, seed=None):
         self.signals = []
         self.probes = []
 
@@ -33,7 +33,6 @@ class Model(object):
 
         self.name = name + ''  # -- make self.name a string, raise error otw
         self.seed = seed
-        self.fixed_seed = fixed_seed
 
         self.t = self.add(core.Signal(name='t'))
         self.steps = self.add(core.Signal(name='steps'))
@@ -44,7 +43,8 @@ class Model(object):
         self.probe(self.steps)
 
         # -- steps counts by 1.0
-        self._operators += [simulator.ProdUpdate(core.Constant(1), self.one, core.Constant(1), self.steps)]
+        self._operators += [simulator.ProdUpdate(
+                core.Constant(1), self.one, core.Constant(1), self.steps)]
 
         self._rng = None
 
@@ -52,14 +52,11 @@ class Model(object):
         return "Model: " + self.name
 
     def _get_new_seed(self):
-        if self.fixed_seed is not None:
-            return self.fixed_seed
-        else:
-            if self._rng is None:
-                # never create rng without knowing the seed
-                assert self.seed is not None
-                self._rng = np.random.RandomState(self.seed)
-            return self._rng.randint(2**32)
+        if self._rng is None:
+            # never create rng without knowing the seed
+            assert self.seed is not None
+            self._rng = np.random.RandomState(self.seed)
+        return self._rng.randint(2**32)
 
     ### I/O
 
@@ -173,14 +170,11 @@ class Model(object):
         modelcopy = copy.deepcopy(self, memo)
         modelcopy.memo = memo
 
-        if modelcopy.seed is None and modelcopy.fixed_seed is None:
-            modelcopy.seed = np.random.randint(2**32)
-
-        assert modelcopy.seed is None or modelcopy.fixed_seed is None, (
-            "Do not set both the fixed seed and the seed")
+        if modelcopy.seed is None:
+            modelcopy.seed = np.random.randint(2**32) # generate model seed
 
         if seed is None:
-            seed = modelcopy._get_new_seed()
+            seed = modelcopy._get_new_seed() # generate simulator seed
 
         self.prep_for_simulation(modelcopy, dt)
         return sim_class(model=modelcopy, **sim_args) # TODO: pass in seed
