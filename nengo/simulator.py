@@ -11,7 +11,7 @@ import time
 import networkx as nx
 import numpy as np
 
-import core
+import builder
 
 logger = logging.getLogger(__name__)
 
