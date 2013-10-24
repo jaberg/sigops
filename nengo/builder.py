@@ -1,17 +1,7 @@
-"""
-Low-level objects
-=================
-
-These classes are used to describe a Nengo model to be simulated.
-Model is the input to a *simulator* (see e.g. simulator.py).
-
-"""
 import copy
 import logging
 
 import numpy as np
-import simulator as sim
-
 
 logger = logging.getLogger(__name__)
 
@@ -661,3 +651,53 @@ class ProdUpdate(Operator):
             Y[...] += val
 
         return step
+
+
+def builder(cls):
+    cls._builders = {}
+    for methodname in dir(cls):
+        method = getattr(cls, methodname)
+        if hasattr(method, '_builds'):
+            cls._builders.update({method._builds: method})
+    return cls
+
+
+def builds(cls):
+    def wrapper(func):
+        func._builds = cls
+        return func
+    return wrapper
+
+
+@builder
+class Builder(object):
+    def __call__(self, model, dt):
+        logger.info("Copying model")
+        memo = {}
+        model = copy.deepcopy(model, memo)
+        model.memo = memo
+        model.name = model.name + ", dt=%f" % dt
+        model.dt = dt
+        model.signals = []
+        model.probes = []
+        model.operators = []
+
+        # 1. Generate model seed
+        if model.seed is None:
+            model.seed = np.random.randint(2**32)
+
+        # 2. Build objects
+        logger.info("Building objects")
+        for obj in model.objs.values():
+            self._builders[obj.__class__](self, obj, model=model, dt=dt)
+
+        # Set up t and timesteps
+        model.t.value = -dt
+        model.operators += [
+            ProdUpdate(Constant(dt), model.one.signal,
+                       Constant(1), model.t.signal),
+            ProdUpdate(Constant(1), model.one.signal,
+                       Constant(1), model.steps.signal)
+        ]
+
+        return model
