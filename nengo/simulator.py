@@ -11,7 +11,7 @@ import time
 import networkx as nx
 import numpy as np
 
-import builder
+from . import builder
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +54,11 @@ class SignalDict(dict):
 class Simulator(object):
     """Reference simulator for models.
     """
-    def __init__(self, operators, probes=None, dt=0.001):
+    def __init__(self, operators, probes=None, dt=0.001, seed=None):
         self.dt = dt
         self.operators = operators
         self.probes = probes if probes is not None else []
+        self.seed = seed
 
         # -- map from Signal.base -> ndarray
         self._sigdict = SignalDict()

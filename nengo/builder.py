@@ -1,17 +1,7 @@
-"""
-Low-level objects
-=================
-
-These classes are used to describe a Nengo model to be simulated.
-Model is the input to a *simulator* (see e.g. simulator.py).
-
-"""
 import copy
 import logging
 
 import numpy as np
-import simulator as sim
-
 
 logger = logging.getLogger(__name__)
 
