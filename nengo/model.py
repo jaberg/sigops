@@ -34,17 +34,12 @@ class Model(object):
         self.name = name + ''  # -- make self.name a string, raise error otw
         self.seed = seed
 
-        self.t = self.add(builder.Signal(name='t'))
-        self.steps = self.add(builder.Signal(name='steps'))
-        self.one = self.add(builder.Constant([1.0], name='one'))
+        self.t = self.make_node('t', output=0)
+        self.steps = self.make_node('steps', output=0)
+        self.one = self.make_node('one', output=[1.0])
 
-        # Automatically probe these
+        # Automatically probe time
         self.probe(self.t)
-        self.probe(self.steps)
-
-        # -- steps counts by 1.0
-        self._operators += [builder.ProdUpdate(
-                builder.Constant(1), self.one, builder.Constant(1), self.steps)]
 
         self._rng = None
 
@@ -123,8 +118,6 @@ class Model(object):
     def prep_for_simulation(model, dt):
         model.name = model.name + ", dt=%f" % dt
         model.dt = dt
-        model._operators += [builder.ProdUpdate(builder.Constant(dt), model.one,
-                                                builder.Constant(1), model.t)]
 
         # Sort all objects by name
         all_objs = sorted(model.objs.values(), key=lambda o: o.name)
@@ -140,6 +133,14 @@ class Model(object):
             if not isinstance(model.probed[target], builder.Probe):
                 model.probed[target].build(model=model, dt=dt)
                 model.probed[target] = model.probed[target].probe
+
+        model._operators += [
+            builder.ProdUpdate(builder.Constant(dt), model.one.signal,
+                               builder.Constant(1), model.t.signal),
+            builder.ProdUpdate(builder.Constant(1), model.one.signal,
+                               builder.Constant(1), model.steps.signal)
+        ]
+
 
     def simulator(self, dt=0.001, sim_class=simulator.Simulator,
                   seed=None, **sim_args):
@@ -226,17 +227,14 @@ class Model(object):
             logger.warning("%s is not in model %s.", str(target), self.name)
             return
 
-        if 'builder' in obj.__module__:
-            obj.remove_from_model(self)
-        else:
-            for k, v in self.objs.iteritems():
-                if v == obj:
-                    del self.objs[k]
-                    logger.info("%s removed.", k)
-            for k, v in self.aliases.iteritem():
-                if v == obj:
-                    del self.aliases[k]
-                    logger.info("Alias '%s' removed.", k)
+        for k, v in self.objs.iteritems():
+            if v == obj:
+                del self.objs[k]
+                logger.info("%s removed.", k)
+        for k, v in self.aliases.iteritem():
+            if v == obj:
+                del self.aliases[k]
+                logger.info("Alias '%s' removed.", k)
 
         return obj
 

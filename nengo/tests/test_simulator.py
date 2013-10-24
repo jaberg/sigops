@@ -15,20 +15,20 @@ class TestSimulator(unittest.TestCase):
     def test_steps(self):
         m = nengo.Model("test_signal_indexing_1")
         sim = m.simulator(sim_class=simulator.Simulator)
-        self.assertEqual(0, sim.signals[m.steps])
+        self.assertEqual(0, sim.signals[sim.model.steps.signal])
         sim.step()
-        self.assertEqual(1, sim.signals[m.steps])
+        self.assertEqual(1, sim.signals[sim.model.steps.signal])
         sim.step()
-        self.assertEqual(2, sim.signals[m.steps])
+        self.assertEqual(2, sim.signals[sim.model.steps.signal])
 
     def test_time(self):
         m = nengo.Model("test_signal_indexing_1")
         sim = m.simulator(sim_class=simulator.Simulator)
-        self.assertEqual(0.00, sim.signals[m.t])
+        self.assertEqual(0.00, sim.signals[sim.model.t.signal])
         sim.step()
-        self.assertEqual(0.001, sim.signals[m.t])
+        self.assertEqual(0.001, sim.signals[sim.model.t.signal])
         sim.step()
-        self.assertEqual(0.002, sim.signals[m.t])
+        self.assertEqual(0.002, sim.signals[sim.model.t.signal])
 
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
