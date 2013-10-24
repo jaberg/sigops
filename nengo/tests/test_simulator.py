@@ -7,6 +7,7 @@ import numpy as np
 
 import nengo.simulator as simulator
 from nengo.builder import Signal, Constant
+from nengo.builder import DotInc, ProdUpdate, Reset, Copy
 
 
 class TestSimulator(unittest.TestCase):
@@ -18,17 +19,12 @@ class TestSimulator(unittest.TestCase):
         tmp = Signal(n=3, name='tmp')
 
         operators = []
-        operators += [simulator.ProdUpdate(
-            Constant(1), three[0:1], Constant(0), one)]
-        operators += [simulator.ProdUpdate(
-            Constant(2.0), three[1:], Constant(0), two)]
+        operators += [ProdUpdate(Constant(1), three[0:1], Constant(0), one)]
+        operators += [ProdUpdate(Constant(2.0), three[1:], Constant(0), two)]
         operators += [
-            simulator.Reset(tmp),
-            simulator.DotInc(
-                Constant([[0,0,1],[0,1,0],[1,0,0]]),
-                three,
-                tmp),
-            simulator.Copy(src=tmp, dst=three, as_update=True),
+            Reset(tmp),
+            DotInc(Constant([[0,0,1],[0,1,0],[1,0,0]]), three, tmp),
+            Copy(src=tmp, dst=three, as_update=True),
             ]
 
         sim = simulator.Simulator(operators)
