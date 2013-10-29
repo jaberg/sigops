@@ -12,24 +12,20 @@ from nengo.builder import Signal, Constant
 from nengo.builder import DotInc, ProdUpdate, Reset, Copy
 
 
-class TestBuilder(object):
-    def __enter__(self):
-        simulator.Simulator.builder = self
+def testbuilder(model, dt):
+    model.dt = dt
+    model.seed = 0
+    if not hasattr(model, 'probes'):
+        model.probes = []
+    return model
 
-    def __exit__(self, type, value, traceback):
-        simulator.Simulator.builder = Builder()
-
-    def __call__(self, model, dt):
-        model.dt = dt
-        model.seed = 0
-        if not hasattr(model, 'probes'):
-            model.probes = []
-        return model
 
 class TestSimulator(unittest.TestCase):
+    Simulator = simulator.Simulator
+
     def test_steps(self):
         m = nengo.Model("test_signal_indexing_1")
-        sim = m.simulator(sim_class=simulator.Simulator)
+        sim = m.simulator(sim_class=self.Simulator)
         self.assertEqual(0, sim.signals[sim.model.steps.signal])
         sim.step()
         self.assertEqual(1, sim.signals[sim.model.steps.signal])
@@ -38,7 +34,7 @@ class TestSimulator(unittest.TestCase):
 
     def test_time(self):
         m = nengo.Model("test_signal_indexing_1")
-        sim = m.simulator(sim_class=simulator.Simulator)
+        sim = m.simulator(sim_class=self.Simulator)
         self.assertEqual(0.00, sim.signals[sim.model.t.signal])
         sim.step()
         self.assertEqual(0.001, sim.signals[sim.model.t.signal])
@@ -62,17 +58,16 @@ class TestSimulator(unittest.TestCase):
             Copy(src=tmp, dst=three, as_update=True),
         ]
 
-        with TestBuilder():
-            sim = m.simulator(sim_class=simulator.Simulator)
-            sim.signals[three] = np.asarray([1, 2, 3])
-            sim.step()
-            self.assertTrue(np.all(sim.signals[one] == 1))
-            self.assertTrue(np.all(sim.signals[two] == [4, 6]))
-            self.assertTrue(np.all(sim.signals[three] == [3, 2, 1]))
-            sim.step()
-            self.assertTrue(np.all(sim.signals[one] == 3))
-            self.assertTrue(np.all(sim.signals[two] == [4, 2]))
-            self.assertTrue(np.all(sim.signals[three] == [1, 2, 3]))
+        sim = m.simulator(sim_class=self.Simulator, builder=testbuilder)
+        sim.signals[three] = np.asarray([1, 2, 3])
+        sim.step()
+        self.assertTrue(np.all(sim.signals[one] == 1))
+        self.assertTrue(np.all(sim.signals[two] == [4, 6]))
+        self.assertTrue(np.all(sim.signals[three] == [3, 2, 1]))
+        sim.step()
+        self.assertTrue(np.all(sim.signals[one] == 3))
+        self.assertTrue(np.all(sim.signals[two] == [4, 2]))
+        self.assertTrue(np.all(sim.signals[three] == [1, 2, 3]))
 
 
 if __name__ == "__main__":
