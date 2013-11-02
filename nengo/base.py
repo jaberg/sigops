@@ -281,8 +281,11 @@ class SignalView(object):
 
 class Signal(SignalView):
     """Interpretable, vector-valued quantity within NEF"""
-    def __init__(self, n=1, dtype=np.float64, name=None):
-        self.n = n
+    def __init__(self, value=None, shape=1, dtype=np.float64, name=None):
+        if value is not None:
+            self.value = np.asarray(value)
+        else:
+            self.shape = shape
         self._dtype = dtype
         if name is not None:
             self._name = name
@@ -291,24 +294,30 @@ class Signal(SignalView):
 
     def __str__(self):
         try:
-            return "Signal(" + self._name + ", " + str(self.n) + "D)"
+            return "Signal(" + self._name + ", shape=" + str(self.shape) + ")"
         except AttributeError:
-            return "Signal (id " + str(id(self)) + ", " + str(self.n) + "D)"
+            return ("Signal(id " + str(id(self)) + ", shape="
+                    + str(self.shape) + ")")
 
     def __repr__(self):
         return str(self)
 
     @property
     def shape(self):
-        return (self.n,)
+        return self.value.shape
+
+    @shape.setter
+    def shape(self, _shape):
+        self.value = np.zeros(_shape)
 
     @property
     def size(self):
-        return self.n
+        return self.value.size
 
     @property
     def elemstrides(self):
-        return (1,)
+        s = np.asarray(self.value.strides)
+        return tuple(map(int, s / self.dtype.itemsize))
 
     @property
     def offset(self):
@@ -318,49 +327,8 @@ class Signal(SignalView):
     def base(self):
         return self
 
-
-
-class Constant(Signal):
-    """A signal meant to hold a fixed value"""
-    def __init__(self, value, name=None):
-        self.value = np.asarray(value)
-
-        Signal.__init__(self, self.value.size, name=name)
-
-    def __str__(self):
-        if self.name is not None:
-            return "Constant(" + self.name + ")"
-        return "Constant(id " + str(id(self)) + ")"
-
     def __repr__(self):
         return str(self)
-
-    @property
-    def shape(self):
-        return self.value.shape
-
-    @property
-    def elemstrides(self):
-        s = np.asarray(self.value.strides)
-        return tuple(map(int, s / self.dtype.itemsize))
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'name': self.name,
-            'value': self.value.tolist(),
-        }
-
-
-def is_signal(sig):
-    return isinstance(sig, SignalView)
-
-
-def is_constant(sig):
-    """
-    Return True iff `sig` is (or is a view of) a Constant signal.
-    """
-    return isinstance(sig.base, Constant)
 
 
 class collect_operators_into(object):
@@ -536,23 +504,29 @@ class DotInc(Operator):
         A = dct[self.A]
         Y = dct[self.Y]
         X = X.T if self.xT else X
-        def step():
-            # -- we check for size mismatch,
-            #    because incrementing scalar to len-1 arrays is ok
-            #    if the shapes are not compatible, we'll get a
-            #    problem in Y[...] += inc
-            try:
-                inc =  np.dot(A, X)
-            except Exception, e:
-                e.args = e.args + (A.shape, X.shape)
-                raise
-            if inc.shape != Y.shape:
-                if inc.size == Y.size == 1:
-                    inc = np.asarray(inc).reshape(Y.shape)
-                else:
-                    raise ValueError('shape mismatch in %s %s x %s -> %s' % (
-                        self.tag, self.A, self.X, self.Y), (
+        reshape = False
+
+        # -- we check for size mismatch,
+        #    because incrementing scalar to len-1 arrays is ok
+        #    if the shapes are not compatible, we'll get a
+        #    problem in Y[...] += inc
+        try:
+            inc =  np.dot(A, X)
+        except Exception, e:
+            e.args = e.args + (A.shape, X.shape)
+            raise
+        if inc.shape != Y.shape:
+            if inc.size == Y.size == 1:
+                reshape = True
+            else:
+                raise ValueError('shape mismatch in %s %s x %s -> %s' % (
+                    self.tag, self.A, self.X, self.Y), (
                         A.shape, X.shape, inc.shape, Y.shape))
+
+        def step():
+            inc =  np.dot(A, X)
+            if reshape:
+                inc = np.asarray(inc).reshape(Y.shape)
             Y[...] += inc
 
         return step
@@ -580,15 +554,20 @@ class ProdUpdate(Operator):
         A = dct[self.A]
         Y = dct[self.Y]
         B = dct[self.B]
+        reshape = False
+
+        val = np.dot(A,X)
+        if val.shape != Y.shape:
+            if val.size == Y.size == 1:
+                reshape = True
+            else:
+                raise ValueError('shape mismatch in %s (%s vs %s)' %
+                                 (self.tag, val, Y))
 
         def step():
             val = np.dot(A,X)
-            if val.shape != Y.shape:
-                if val.size == Y.size == 1:
-                    val = np.asarray(val).reshape(Y.shape)
-                else:
-                    raise ValueError('shape mismatch in %s (%s vs %s)' %
-                                     (self.tag, val, Y))
+            if reshape:
+                val = np.asarray(val).reshape(Y.shape)
             Y[...] *= B
             Y[...] += val
 
