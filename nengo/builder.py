@@ -188,16 +188,6 @@ class SignalView(object):
     def name(self, value):
         self._name = value
 
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'name': self.name,
-            'base': self.base.name,
-            'shape': list(self.shape),
-            'elemstrides': list(self.elemstrides),
-            'offset': self.offset,
-        }
-
     def is_contiguous(self, return_range=False):
         def ret_false():
             if return_range:
@@ -334,13 +324,6 @@ class Signal(SignalView):
     def base(self):
         return self
 
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'name': self.name,
-            'n': self.n,
-            'dtype': str(self.dtype),
-        }
 
 
 class Probe(object):
@@ -354,13 +337,6 @@ class Probe(object):
 
     def __repr__(self):
         return str(self)
-
-    def to_json(self):
-        return {
-            '__class__': self.__module__ + '.' + self.__class__.__name__,
-            'sig': self.sig.name,
-            'dt': self.dt,
-        }
 
 
 class Constant(Signal):
