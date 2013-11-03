@@ -18,7 +18,6 @@ class Model(object):
 
     def __init__(self, name, seed=None):
         self.objs = OrderedDict()
-        self.aliases = {}
         self.probed = OrderedDict()
         self.signal_probes = []
 
@@ -143,35 +142,16 @@ class Model(object):
 
     def get(self, target, default=None):
         if isinstance(target, str):
-            if self.aliases.has_key(target):
-                return self.aliases[target]
-            elif self.objs.has_key(target):
-                return self.objs[target]
-            if default is None:
-                logger.error("Cannot find %s in model %s.", target, self.name)
-            return default
-
+            return self.objs.get(target, default)
         return target
 
     def get_string(self, target, default=None):
-        if isinstance(target, str):
-            if self.aliases.has_key(target):
-                obj = self.aliases[target]
-            elif self.objs.has_key(target):
-                return target
-
+        if isinstance(target, str) and self.objs.has_key(target):
+            return target
         for k, v in self.objs.iteritems():
             if v == target:
                 return k
-
-        logger.warning("Cannot find %s in model %s.", str(target), self.name)
         return default
-
-    # def data(self, target):
-    #     target = self.get_string(target, target)
-    #     if not isinstance(target, str):
-    #         target = target.name
-    #     return self._data[target]
 
     def remove(self, target):
         obj = self.get(target)
@@ -183,20 +163,8 @@ class Model(object):
             if v == obj:
                 del self.objs[k]
                 logger.info("%s removed.", k)
-        for k, v in self.aliases.iteritem():
-            if v == obj:
-                del self.aliases[k]
-                logger.info("Alias '%s' removed.", k)
 
         return obj
-
-    def alias(self, alias, target):
-        obj_s = self.get_string(target)
-        if obj_s is None:
-            raise ValueError(target + " cannot be found.")
-        self.aliases[alias] = obj_s
-        logger.info("%s aliased to %s", obj_s, alias)
-        return self.get(obj_s)
 
     # Model creation methods
 
