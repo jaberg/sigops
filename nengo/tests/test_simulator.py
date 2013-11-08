@@ -26,23 +26,25 @@ class TestSimulator(unittest.TestCase):
     def test_signal_init_values(self):
         """Tests that initial values are not overwritten."""
         m = nengo.Model("test_signal_init_values")
-        zero = Signal(value=[0])
-        one = Signal(value=[1])
-        five = Signal(value=[5.0])
-        zeroarray = Signal(value=np.array([[0,0,0]]))
-        array = Signal(value=np.array([1,2,3]))
+        zero = Signal([0])
+        one = Signal([1])
+        five = Signal([5.0])
+        zeroarray = Signal([[0,0,0]])
+        array = Signal([1,2,3])
         m.signals = [zero, one, five, array]
         m.operators = [ProdUpdate(zero, zero, one, five),
                        ProdUpdate(one, zeroarray, one, array)]
 
         sim = m.simulator(sim_class=simulator.Simulator, builder=testbuilder)
-        self.assertEqual(1, sim.signals[sim.get(one)])
-        self.assertEqual(5.0, sim.signals[sim.get(five)])
+        self.assertEqual(0, sim.signals[sim.get(zero)][0])
+        self.assertEqual(1, sim.signals[sim.get(one)][0])
+        self.assertEqual(5.0, sim.signals[sim.get(five)][0])
         self.assertTrue(np.all(
             np.array([1,2,3]) == sim.signals[sim.get(array)]))
         sim.step()
-        self.assertEqual(1, sim.signals[sim.get(one)])
-        self.assertEqual(5.0, sim.signals[sim.get(five)])
+        self.assertEqual(0, sim.signals[sim.get(zero)][0])
+        self.assertEqual(1, sim.signals[sim.get(one)][0])
+        self.assertEqual(5.0, sim.signals[sim.get(five)][0])
         self.assertTrue(np.all(
             np.array([1,2,3]) == sim.signals[sim.get(array)]))
 
@@ -67,17 +69,17 @@ class TestSimulator(unittest.TestCase):
     def test_signal_indexing_1(self):
         m = nengo.Model("test_signal_indexing_1")
 
-        one = Signal(shape=1, name='a')
-        two = Signal(shape=2, name='b')
-        three = Signal(shape=3, name='c')
-        tmp = Signal(shape=3, name='tmp')
+        one = Signal(np.zeros(1), name='a')
+        two = Signal(np.zeros(2), name='b')
+        three = Signal(np.zeros(3), name='c')
+        tmp = Signal(np.zeros(3), name='tmp')
         m.signals = [one, two, three, tmp]
 
         m.operators = [
-            ProdUpdate(Signal(value=1), three[:1], Signal(value=0), one),
-            ProdUpdate(Signal(value=2.0), three[1:], Signal(value=0), two),
+            ProdUpdate(Signal(1), three[:1], Signal(0), one),
+            ProdUpdate(Signal(2.0), three[1:], Signal(0), two),
             Reset(tmp),
-            DotInc(Signal(value=[[0,0,1],[0,1,0],[1,0,0]]), three, tmp),
+            DotInc(Signal([[0,0,1],[0,1,0],[1,0,0]]), three, tmp),
             Copy(src=tmp, dst=three, as_update=True),
         ]
 
