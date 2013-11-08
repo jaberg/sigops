@@ -66,7 +66,7 @@ class SignalView(object):
 
     @property
     def dtype(self):
-        return np.dtype(self.base._dtype)
+        return np.dtype(self.base.dtype)
 
     @property
     def ndim(self):
@@ -283,12 +283,8 @@ class SignalView(object):
 
 class Signal(SignalView):
     """Interpretable, vector-valued quantity within NEF"""
-    def __init__(self, value=None, shape=1, dtype=np.float64, name=None):
-        if value is not None:
-            self.value = np.asarray(value)
-        else:
-            self.shape = shape
-        self._dtype = dtype
+    def __init__(self, value, name=None):
+        self.value = np.asarray(value, dtype=np.float64)
         if name is not None:
             self._name = name
         if assert_named_signals:
@@ -305,12 +301,12 @@ class Signal(SignalView):
         return str(self)
 
     @property
+    def dtype(self):
+        return self.value.dtype
+
+    @property
     def shape(self):
         return self.value.shape
-
-    @shape.setter
-    def shape(self, _shape):
-        self.value = np.zeros(_shape)
 
     @property
     def size(self):
@@ -483,6 +479,34 @@ class Copy(Operator):
         return step
 
 
+def reshape_dot(A, X, Y, tag=None):
+    """Checks if the dot product needs to be reshaped.
+
+    Also does a bunch of error checking based on the shapes of A and X.
+
+    """
+    badshape = False
+    ashape = (1,) if A.shape == () else A.shape
+    xshape = (1,) if X.shape == () else X.shape
+    if A.shape == ():
+        incshape = X.shape
+    elif X.shape == ():
+        incshape = A.shape
+    elif X.ndim == 1:
+        badshape = ashape[-1] != xshape[0]
+        incshape = ashape[:-1]
+    else:
+        badshape = ashape[-1] != xshape[-2]
+        incshape = ashape[:-1] + xshape[:-2] + xshape[-1:]
+
+    if (badshape or incshape != Y.shape) and incshape != ():
+        raise ValueError('shape mismatch in %s: %s x %s -> %s' % (
+            tag, A.shape, X.shape, Y.shape))
+
+    # If the result is scalar, we'll reshape it so Y[...] += inc works
+    return incshape == ()
+
+
 class DotInc(Operator):
     """
     Increment signal Y by dot(A, X)
@@ -506,31 +530,12 @@ class DotInc(Operator):
         A = dct[self.A]
         Y = dct[self.Y]
         X = X.T if self.xT else X
-        reshape = False
-
-        # -- we check for size mismatch,
-        #    because incrementing scalar to len-1 arrays is ok
-        #    if the shapes are not compatible, we'll get a
-        #    problem in Y[...] += inc
-        try:
-            inc =  np.dot(A, X)
-        except Exception, e:
-            e.args = e.args + (A.shape, X.shape)
-            raise
-        if inc.shape != Y.shape:
-            if inc.size == Y.size == 1:
-                reshape = True
-            else:
-                raise ValueError('shape mismatch in %s %s x %s -> %s' % (
-                    self.tag, self.A, self.X, self.Y), (
-                        A.shape, X.shape, inc.shape, Y.shape))
-
+        reshape = reshape_dot(A, X, Y, self.tag)
         def step():
             inc =  np.dot(A, X)
             if reshape:
                 inc = np.asarray(inc).reshape(Y.shape)
             Y[...] += inc
-
         return step
 
 class ProdUpdate(Operator):
@@ -556,21 +561,11 @@ class ProdUpdate(Operator):
         A = dct[self.A]
         Y = dct[self.Y]
         B = dct[self.B]
-        reshape = False
-
-        val = np.dot(A,X)
-        if val.shape != Y.shape:
-            if val.size == Y.size == 1:
-                reshape = True
-            else:
-                raise ValueError('shape mismatch in %s (%s vs %s)' %
-                                 (self.tag, val, Y))
-
+        reshape = reshape_dot(A, X, Y, self.tag)
         def step():
             val = np.dot(A,X)
             if reshape:
                 val = np.asarray(val).reshape(Y.shape)
             Y[...] *= B
             Y[...] += val
-
         return step
