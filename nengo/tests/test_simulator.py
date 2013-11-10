@@ -31,7 +31,6 @@ class TestSimulator(unittest.TestCase):
         five = Signal([5.0])
         zeroarray = Signal([[0,0,0]])
         array = Signal([1,2,3])
-        m.signals = [zero, one, five, array]
         m.operators = [ProdUpdate(zero, zero, one, five),
                        ProdUpdate(one, zeroarray, one, array)]
 
@@ -73,7 +72,6 @@ class TestSimulator(unittest.TestCase):
         two = Signal(np.zeros(2), name='b')
         three = Signal(np.zeros(3), name='c')
         tmp = Signal(np.zeros(3), name='tmp')
-        m.signals = [one, two, three, tmp]
 
         m.operators = [
             ProdUpdate(Signal(1), three[:1], Signal(0), one),
