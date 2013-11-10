@@ -18,7 +18,6 @@ class TestSimulator(unittest.TestCase):
         five = Signal([5.0])
         zeroarray = Signal([[0,0,0]])
         array = Signal([1,2,3])
-        signals = [zero, one, five, array]
         operators = [ProdUpdate(zero, zero, one, five),
                      ProdUpdate(one, zeroarray, one, array)]
 

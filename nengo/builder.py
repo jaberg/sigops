@@ -343,7 +343,6 @@ class Probe(object):
         return str(self)
 
 
-
 class collect_operators_into(object):
     """
     Within this context, operators that are constructed
