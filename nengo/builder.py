@@ -631,27 +631,29 @@ class Builder(object):
             # Make a copy of the model so that we can reuse the non-built model
             logger.info("Copying model")
             memo = {}
-            model = copy.deepcopy(model, memo)
-            model.memo = memo
+            self.model = copy.deepcopy(model, memo)
+            self.model.memo = memo
+        else:
+            self.model = model
 
-        model.name = model.name + ", dt=%f" % dt
-        model.dt = dt
-        if model.seed is None:
-            model.seed = np.random.randint(np.iinfo(np.int32).max)
+        self.model.name = self.model.name + ", dt=%f" % dt
+        self.model.dt = dt
+        if self.model.seed is None:
+            self.model.seed = np.random.randint(np.iinfo(np.int32).max)
 
         # The purpose of the build process is to fill up these lists
-        model.probes = []
-        model.operators = []
+        self.model.probes = []
+        self.model.operators = []
 
         # 1. Build objects
         logger.info("Building objects")
-        for obj in model.objs.values():
-            self._builders[obj.__class__](obj, model=model, dt=dt)
+        for obj in self.model.objs.values():
+            self._builders[obj.__class__](obj)
 
         # Set up t and timesteps
-        model.operators += [
-            ProdUpdate(Signal(1), Signal(dt), Signal(1), model.t.signal),
-            ProdUpdate(Signal(1), Signal(1), Signal(1), model.steps.signal),
-        ]
+        self.model.operators.append(ProdUpdate(
+            Signal(1), Signal(self.model.dt), Signal(1), self.model.t.signal))
+        self.model.operators.append(ProdUpdate(
+            Signal(1), Signal(1), Signal(1), self.model.steps.signal))
 
-        return model
+        return self.model
