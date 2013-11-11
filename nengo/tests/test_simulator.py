@@ -6,8 +6,7 @@ except ImportError:
 import numpy as np
 
 import nengo.simulator as simulator
-from nengo.base import Signal
-from nengo.base import DotInc, ProdUpdate, Reset, Copy
+from nengo.base import Signal, ProdUpdate, Reset, DotInc, Copy
 
 
 class TestSimulator(unittest.TestCase):
@@ -16,10 +15,10 @@ class TestSimulator(unittest.TestCase):
         zero = Signal([0])
         one = Signal([1])
         five = Signal([5.0])
-        zeroarray = Signal([[0,0,0]])
+        zeroarray = Signal([[0],[0],[0]])
         array = Signal([1,2,3])
         operators = [ProdUpdate(zero, zero, one, five),
-                     ProdUpdate(one, zeroarray, one, array)]
+                     ProdUpdate(zeroarray, one, one, array)]
 
         sim = simulator.Simulator(operators)
         self.assertEqual(0, sim.signals[zero][0])
