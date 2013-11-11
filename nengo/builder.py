@@ -649,9 +649,14 @@ class Builder(object):
             self._builders[obj.__class__](obj)
 
         # Set up t and timesteps
-        self.model.operators.append(ProdUpdate(
-            Signal(1), Signal(self.model.dt), Signal(1), self.model.t.signal))
-        self.model.operators.append(ProdUpdate(
-            Signal(1), Signal(1), Signal(1), self.model.steps.signal))
-
+        self.model.operators.append(
+            ProdUpdate(Signal(1),
+                       Signal(self.model.dt),
+                       Signal(1),
+                       self.model.t.output_signal))
+        self.model.operators.append(
+            ProdUpdate(Signal(1),
+                       Signal(1),
+                       Signal(1),
+                       self.model.steps.output_signal))
         return self.model
