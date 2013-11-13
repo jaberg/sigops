@@ -32,22 +32,22 @@ class TestSimulator(unittest.TestCase):
         m.operators = [ProdUpdate(zero, zero, one, five),
                        ProdUpdate(zeroarray, one, one, array)]
 
-        sim = m.simulator(sim_class=self.Simulator, builder=testbuilder)
-        self.assertEqual(0, sim.signals[sim.get(zero)][0])
-        self.assertEqual(1, sim.signals[sim.get(one)][0])
-        self.assertEqual(5.0, sim.signals[sim.get(five)][0])
+        sim = nengo.Simulator(m, builder=testbuilder)
+        self.assertEqual(0, sim.signals[zero][0])
+        self.assertEqual(1, sim.signals[one][0])
+        self.assertEqual(5.0, sim.signals[five][0])
         self.assertTrue(np.all(
-            np.array([1,2,3]) == sim.signals[sim.get(array)]))
+            np.array([1,2,3]) == sim.signals[array]))
         sim.step()
-        self.assertEqual(0, sim.signals[sim.get(zero)][0])
-        self.assertEqual(1, sim.signals[sim.get(one)][0])
-        self.assertEqual(5.0, sim.signals[sim.get(five)][0])
+        self.assertEqual(0, sim.signals[zero][0])
+        self.assertEqual(1, sim.signals[one][0])
+        self.assertEqual(5.0, sim.signals[five][0])
         self.assertTrue(np.all(
-            np.array([1,2,3]) == sim.signals[sim.get(array)]))
+            np.array([1,2,3]) == sim.signals[array]))
 
     def test_steps(self):
         m = nengo.Model("test_signal_indexing_1")
-        sim = m.simulator(sim_class=self.Simulator)
+        sim = nengo.Simulator(m)
         self.assertEqual(0, sim.signals[sim.model.steps.output_signal])
         sim.step()
         self.assertEqual(1, sim.signals[sim.model.steps.output_signal])
@@ -56,7 +56,7 @@ class TestSimulator(unittest.TestCase):
 
     def test_time(self):
         m = nengo.Model("test_signal_indexing_1")
-        sim = m.simulator(sim_class=self.Simulator)
+        sim = nengo.Simulator(m)
         self.assertEqual(0.00, sim.signals[sim.model.t.output_signal])
         sim.step()
         self.assertEqual(0.001, sim.signals[sim.model.t.output_signal])
@@ -79,7 +79,7 @@ class TestSimulator(unittest.TestCase):
             Copy(src=tmp, dst=three, as_update=True),
         ]
 
-        sim = m.simulator(sim_class=self.Simulator, builder=testbuilder)
+        sim = nengo.Simulator(m, builder=testbuilder)
         sim.signals[three] = np.asarray([1, 2, 3])
         sim.step()
         self.assertTrue(np.all(sim.signals[one] == 1))
