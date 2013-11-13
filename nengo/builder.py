@@ -330,7 +330,7 @@ class Signal(SignalView):
         return self
 
 
-class Probe(object):
+class SimulatorProbe(object):
     """A model probe to record a signal"""
     def __init__(self, sig, dt):
         self.sig = sig
@@ -636,7 +636,7 @@ class Builder(object):
         else:
             self.model = model
 
-        self.model.name = self.model.name + ", dt=%f" % dt
+        self.model.label = self.model.label + ", dt=%f" % dt
         self.model.dt = dt
         if self.model.seed is None:
             self.model.seed = np.random.randint(np.iinfo(np.int32).max)
@@ -644,10 +644,12 @@ class Builder(object):
         # The purpose of the build process is to fill up these lists
         self.model.probes = []
         self.model.operators = []
+        self.model.probemap = {}
+#        self.model.objectmap = {}
 
         # 1. Build objects
         logger.info("Building objects")
-        for obj in self.model.objs.values():
+        for obj in self.model.objs:
             self._builders[obj.__class__](obj)
 
         # Set up t and timesteps
