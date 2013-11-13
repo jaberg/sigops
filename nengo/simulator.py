@@ -52,8 +52,8 @@ class SignalDict(dict):
 
 
 class Simulator(object):
-    """Reference simulator for models.
-    """
+    """Reference simulator for models. """
+
     def __init__(self, operators, probes=None, dt=0.001, seed=None):
         self.dt = dt
         self.operators = operators
@@ -217,7 +217,7 @@ class Simulator(object):
         """Simulate for the given length of time."""
         steps = int(np.round(float(time_in_seconds) / self.model.dt))
         logger.debug("Running %s for %f seconds, or %d steps",
-                     self.model.name, time_in_seconds, steps)
+                     self.model.label, time_in_seconds, steps)
         self.run_steps(steps)
 
     def run_steps(self, steps):
