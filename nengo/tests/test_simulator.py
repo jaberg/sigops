@@ -6,8 +6,7 @@ except ImportError:
 import numpy as np
 
 import nengo.simulator as simulator
-from nengo.builder import Signal
-from nengo.builder import DotInc, ProdUpdate, Reset, Copy
+from nengo.builder import Signal, ProdUpdate, Reset, DotInc, Copy
 
 
 class TestSimulator(unittest.TestCase):
