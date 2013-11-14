@@ -6,10 +6,8 @@ except ImportError:
 import numpy as np
 
 import nengo
-import nengo.simulator as simulator
 from nengo.builder import Builder
-from nengo.builder import Signal
-from nengo.builder import DotInc, ProdUpdate, Reset, Copy
+from nengo.builder import Signal, ProdUpdate, Reset, DotInc, Copy
 
 
 def testbuilder(model, dt):
@@ -21,7 +19,7 @@ def testbuilder(model, dt):
 
 
 class TestSimulator(unittest.TestCase):
-    Simulator = simulator.Simulator
+    Simulator = nengo.Simulator
 
     def test_signal_init_values(self):
         """Tests that initial values are not overwritten."""
@@ -34,7 +32,7 @@ class TestSimulator(unittest.TestCase):
         m.operators = [ProdUpdate(zero, zero, one, five),
                        ProdUpdate(zeroarray, one, one, array)]
 
-        sim = m.simulator(sim_class=simulator.Simulator, builder=testbuilder)
+        sim = m.simulator(sim_class=self.Simulator, builder=testbuilder)
         self.assertEqual(0, sim.signals[sim.get(zero)][0])
         self.assertEqual(1, sim.signals[sim.get(one)][0])
         self.assertEqual(5.0, sim.signals[sim.get(five)][0])
