@@ -74,3 +74,6 @@ class Model(object):
         if not target in self.objs:
             logger.warning("%s is not in model %s.", str(target), self.label)
             return
+
+        self.objs = [o for o in self.objs if o != target]
+        logger.info("%s removed.", target)
