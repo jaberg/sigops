@@ -2,6 +2,7 @@ from collections import OrderedDict
 import logging
 import pickle
 import os.path
+
 import numpy as np
 
 
@@ -67,8 +68,8 @@ class Model(object):
         try:
             obj.add_to_model(self)
             return obj
-        except AttributeError,ae:
-            raise TypeError("Error in %s.add_to_model.\n%s"%(obj,ae))
+        except AttributeError, ae:
+            raise TypeError("Error in %s.add_to_model.\n%s" % (obj, ae))
 
     def remove(self, target):
         if not target in self.objs:
