@@ -484,7 +484,8 @@ class Copy(Operator):
         self.updates = [dst] if as_update else []
 
     def __str__(self):
-        return 'Copy(%s -> %s)' % (str(self.src), str(self.dst))
+        return 'Copy(%s -> %s, as_update=%s)' % (
+            str(self.src), str(self.dst), self.as_update)
 
     def make_step(self, dct, dt):
         dst = dct[self.dst]
