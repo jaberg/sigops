@@ -53,14 +53,10 @@ class SignalView(object):
 
     @property
     def structure(self):
-        return (
-            self.shape,
-            self.elemstrides,
-            self.offset)
+        return (self.shape, self.elemstrides, self.offset)
 
     def same_view_as(self, other):
-        return self.structure == other.structure \
-           and self.base == other.base
+        return self.structure == other.structure and self.base == other.base
 
     @property
     def dtype(self):
@@ -111,12 +107,12 @@ class SignalView(object):
         if neworder:
             raise NotImplementedError()
         return SignalView(
-                self.base,
-                reversed(self.shape),
-                reversed(self.elemstrides),
-                self.offset,
-                self.name + '.T'
-                )
+            self.base,
+            reversed(self.shape),
+            reversed(self.elemstrides),
+            self.offset,
+            self.name + '.T'
+        )
 
     @property
     def T(self):
@@ -253,8 +249,7 @@ class SignalView(object):
                 #    non-overlap. They do overlap, so they are aliased.
                 return True
             # TODO: look for common divisor of ae0 and be0
-            raise NotImplementedError('1d',
-                (self.structure, other.structure))
+            raise NotImplementedError('1d', (self.structure, other.structure))
         elif self.ndim == 2:
             # -- self is a matrix view
             #    and other is either a scalar, vector or matrix view
@@ -271,10 +266,10 @@ class SignalView(object):
                         return False
                     else:
                         return True
-                raise NotImplementedError('2d self:contig, other:discontig',
+                raise NotImplementedError(
+                    '2d self:contig, other:discontig',
                     (self.structure, other.structure))
-            raise NotImplementedError('2d',
-                (self.structure, other.structure))
+            raise NotImplementedError('2d', (self.structure, other.structure))
         else:
             raise NotImplementedError()
 
@@ -417,7 +412,6 @@ class Operator(object):
 
         return self.reads + self.sets + self.incs + self.updates
 
-
     def init_sigdict(self, sigdict, dt):
         """
         Install any buffers into the signals view that
@@ -449,6 +443,7 @@ class Reset(Operator):
     def make_step(self, signals, dt):
         target = signals[self.dst]
         value = self.value
+
         def step():
             target[...] = value
         return step
@@ -474,6 +469,7 @@ class Copy(Operator):
     def make_step(self, dct, dt):
         dst = dct[self.dst]
         src = dct[self.src]
+
         def step():
             dst[...] = src
         return step
@@ -522,19 +518,21 @@ class DotInc(Operator):
 
     def __str__(self):
         return 'DotInc(%s, %s -> %s "%s")' % (
-                str(self.A), str(self.X), str(self.Y), self.tag)
+            str(self.A), str(self.X), str(self.Y), self.tag)
 
     def make_step(self, dct, dt):
         X = dct[self.X]
         A = dct[self.A]
         Y = dct[self.Y]
         reshape = reshape_dot(A, X, Y, self.tag)
+
         def step():
-            inc =  np.dot(A, X)
+            inc = np.dot(A, X)
             if reshape:
                 inc = np.asarray(inc).reshape(Y.shape)
             Y[...] += inc
         return step
+
 
 class ProdUpdate(Operator):
     """
@@ -552,7 +550,7 @@ class ProdUpdate(Operator):
 
     def __str__(self):
         return 'ProdUpdate(%s, %s, %s, -> %s "%s")' % (
-                str(self.A), str(self.X), str(self.B), str(self.Y), self.tag)
+            str(self.A), str(self.X), str(self.B), str(self.Y), self.tag)
 
     def make_step(self, dct, dt):
         X = dct[self.X]
@@ -560,8 +558,9 @@ class ProdUpdate(Operator):
         Y = dct[self.Y]
         B = dct[self.B]
         reshape = reshape_dot(A, X, Y, self.tag)
+
         def step():
-            val = np.dot(A,X)
+            val = np.dot(A, X)
             if reshape:
                 val = np.asarray(val).reshape(Y.shape)
             Y[...] *= B
