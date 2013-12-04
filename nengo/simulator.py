@@ -42,16 +42,15 @@ class SignalDict(dict):
                               dtype=obj.dtype,
                               buffer=base_array.data,
                               offset=byteoffset,
-                              strides=bytestrides,
-                             )
+                              strides=bytestrides)
             return view
         else:
             raise KeyError(obj)
 
 
 class Simulator(object):
-    """Reference simulator for models.
-    """
+    """Reference simulator for models. """
+
     def __init__(self, operators, dt=0.001):
         self.dt = dt
         self.operators = operators
@@ -63,10 +62,10 @@ class Simulator(object):
 
         self.dg = self._init_dg()
         self._step_order = [node
-            for node in nx.topological_sort(self.dg)
-            if hasattr(node, 'make_step')]
+                            for node in nx.topological_sort(self.dg)
+                            if hasattr(node, 'make_step')]
         self._steps = [node.make_step(self._sigdict, self.dt)
-            for node in self._step_order]
+                       for node in self._step_order]
 
         self.n_steps = 0
 
@@ -126,8 +125,7 @@ class Simulator(object):
         # -- assert that no two views are both updated and aliased
         if len(ups) >= 2:
             for node, other in itertools.combinations(ups, 2):
-                assert not node.shares_memory_with(other), (
-                        node, other)
+                assert not node.shares_memory_with(other), (node, other)
 
         # -- Scheduling algorithm for serial evaluation:
         #    1) All sets on a given base signal

@@ -15,8 +15,8 @@ class TestSimulator(unittest.TestCase):
         zero = Signal([0])
         one = Signal([1])
         five = Signal([5.0])
-        zeroarray = Signal([[0],[0],[0]])
-        array = Signal([1,2,3])
+        zeroarray = Signal([[0], [0], [0]])
+        array = Signal([1, 2, 3])
         operators = [ProdUpdate(zero, zero, one, five),
                      ProdUpdate(zeroarray, one, one, array)]
 
@@ -25,13 +25,13 @@ class TestSimulator(unittest.TestCase):
         self.assertEqual(1, sim.signals[one][0])
         self.assertEqual(5.0, sim.signals[five][0])
         self.assertTrue(np.all(
-            np.array([1,2,3]) == sim.signals[array]))
+            np.array([1, 2, 3]) == sim.signals[array]))
         sim.step()
         self.assertEqual(0, sim.signals[zero][0])
         self.assertEqual(1, sim.signals[one][0])
         self.assertEqual(5.0, sim.signals[five][0])
         self.assertTrue(np.all(
-            np.array([1,2,3]) == sim.signals[array]))
+            np.array([1, 2, 3]) == sim.signals[array]))
 
     def test_signal_indexing_1(self):
         one = Signal(np.zeros(1), name='a')
@@ -43,7 +43,7 @@ class TestSimulator(unittest.TestCase):
             ProdUpdate(Signal(1), three[:1], Signal(0), one),
             ProdUpdate(Signal(2.0), three[1:], Signal(0), two),
             Reset(tmp),
-            DotInc(Signal([[0,0,1],[0,1,0],[1,0,0]]), three, tmp),
+            DotInc(Signal([[0, 0, 1], [0, 1, 0], [1, 0, 0]]), three, tmp),
             Copy(src=tmp, dst=three, as_update=True),
         ]
 
