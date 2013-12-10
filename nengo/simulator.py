@@ -60,8 +60,8 @@ class Simulator(object):
         self.seed = seed
 
         # -- map from Signal.base -> ndarray
-        self._sigdict = SignalDict()
-        for op in operators:
+        self._sigdict = SignalDict(__time__=np.asarray(0.0, dtype=np.float64))
+        for op in self.operators:
             op.init_sigdict(self._sigdict, dt)
 
         self.dg = self._init_dg()
@@ -196,8 +196,23 @@ class Simulator(object):
 
         return Accessor()
 
+    def data(self, probe):
+        """Get data from signals that have been probed.
+
+        Parameters
+        ----------
+        probe : Probe
+            TODO
+
+        Returns
+        -------
+        data : ndarray
+            TODO: what are the dimensions?
+        """
+        return np.asarray(self.probe_outputs[probe])
+
     def step(self):
-        """Advance the simulator by `self.model.dt` seconds.
+        """Advance the simulator by `self.dt` seconds.
         """
         for step_fn in self._steps:
             step_fn()
@@ -209,6 +224,7 @@ class Simulator(object):
                 tmp = self._sigdict[probe.sig].copy()
                 self.probe_outputs[probe].append(tmp)
 
+        self._sigdict['__time__'] += self.dt
         self.n_steps += 1
 
     def run(self, time_in_seconds):
@@ -229,3 +245,10 @@ class Simulator(object):
         """TODO
         """
         return np.asarray(self.probe_outputs[probe])
+
+    def time(self, dt=None):
+        dt = self.dt if dt is None else dt
+        last_t = self._sigdict['__time__'] - self.dt
+        n_steps = self.n_steps if dt is None else int(
+            self.n_steps / (dt / self.model.dt))
+        return np.linspace(0, last_t, n_steps)
