@@ -57,7 +57,7 @@ class Simulator(object):
 
         # -- map from Signal.base -> ndarray
         self._sigdict = SignalDict()
-        for op in operators:
+        for op in self.operators:
             op.init_sigdict(self._sigdict, dt)
 
         self.dg = self._init_dg()
@@ -192,7 +192,7 @@ class Simulator(object):
         return Accessor()
 
     def step(self):
-        """Advance the simulator by `self.model.dt` seconds.
+        """Advance the simulator by one timestep.
         """
         for step_fn in self._steps:
             step_fn()

@@ -33,6 +33,14 @@ class TestSimulator(unittest.TestCase):
         self.assertTrue(np.all(
             np.array([1, 2, 3]) == sim.signals[array]))
 
+    def test_steps(self):
+        sim = simulator.Simulator([])
+        self.assertEqual(0, sim.n_steps)
+        sim.step()
+        self.assertEqual(1, sim.n_steps)
+        sim.step()
+        self.assertEqual(2, sim.n_steps)
+
     def test_signal_indexing_1(self):
         one = Signal(np.zeros(1), name='a')
         two = Signal(np.zeros(2), name='b')
