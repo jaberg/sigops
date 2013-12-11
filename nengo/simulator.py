@@ -3,6 +3,9 @@ Simulator.py
 
 Reference simulator for nengo models.
 """
+
+from __future__ import print_function
+
 import logging
 import itertools
 from collections import defaultdict
@@ -188,10 +191,10 @@ class Simulator(object):
                 return self._sigdict.__len__()
 
             def __str__(_):
-                import StringIO
-                sio = StringIO.StringIO()
+                import io
+                sio = io.StringIO()
                 for k in self._sigdict:
-                    print >> sio, k, self._sigdict[k]
+                    print_function(k, self._sigdict[k], file=sio)
                 return sio.getvalue()
 
         return Accessor()
@@ -236,7 +239,7 @@ class Simulator(object):
 
     def run_steps(self, steps):
         """Simulate for the given number of `dt` steps."""
-        for i in xrange(steps):
+        for i in range(steps):
             if i % 1000 == 0:
                 logger.debug("Step %d", i)
             self.step()
