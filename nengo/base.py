@@ -1,6 +1,5 @@
 import numpy as np
 
-
 """
 Set assert_named_signals True to raise an Exception
 if model.signal is used to create a signal with no name.
@@ -17,6 +16,7 @@ class ShapeMismatch(ValueError):
 
 
 class SignalView(object):
+
     def __init__(self, base, shape, elemstrides, offset, name=None):
         assert base is not None
         self.base = base
@@ -44,7 +44,7 @@ class SignalView(object):
             raise NotImplementedError()
         if newbase.structure != self.base.structure:
             raise NotImplementedError('technically ok but should not happen',
-                                     (self.base, newbase))
+                                      (self.base, newbase))
         return SignalView(newbase,
                           self.shape,
                           self.elemstrides,
@@ -208,8 +208,8 @@ class SignalView(object):
                 return ret_false()
 
         raise NotImplementedError()
-        #if self.ndim == 1 and self.elemstrides[0] == 1:
-            #return self.offset, self.offset + self.size
+        # if self.ndim == 1 and self.elemstrides[0] == 1:
+            # return self.offset, self.offset + self.size
 
     def shares_memory_with(self, other):
         # XXX: WRITE SOME UNIT TESTS FOR THIS FUNCTION !!!
@@ -276,6 +276,7 @@ class SignalView(object):
 
 class Signal(SignalView):
     """Interpretable, vector-valued quantity within NEF"""
+
     def __init__(self, value, name=None):
         self.value = np.asarray(value, dtype=np.float64)
         if name is not None:
@@ -318,60 +319,12 @@ class Signal(SignalView):
     def base(self):
         return self
 
-    def __repr__(self):
-        return str(self)
-
-
-class collect_operators_into(object):
-    """
-    Within this context, operators that are constructed
-    are, by default, appended to an `operators` list.
-
-    For example:
-
-    >>> operators = []
-    >>> with collect_operators_into(operators):
-    >>>    Reset(foo)
-    >>>    Copy(foo, bar)
-    >>> assert len(operators) == 2
-
-    After the context exits, `operators` contains the Reset
-    and the Copy instances.
-
-    """
-    # -- the list of `operators` lists to which we need to append
-    #    new operators when creating them.
-    lists = []
-
-    def __init__(self, operators):
-        if operators is None:
-            operators = []
-        self.operators = operators
-
-    def __enter__(self):
-        self.lists.append(self.operators)
-
-    def __exit__(self, exc_type, exc_value, tb):
-        self.lists.remove(self.operators)
-
-    @staticmethod
-    def collect_operator(op):
-        for lst in collect_operators_into.lists:
-            lst.append(op)
-
 
 class Operator(object):
     """
     Base class for operator instances understood by the reference simulator.
     """
 
-    # -- N.B. automatically an @staticmethod
-    def __new__(cls, *args, **kwargs):
-        rval = super(Operator, cls).__new__(cls, *args, **kwargs)
-        collect_operators_into.collect_operator(rval)
-        return rval
-
-    #
     # The lifetime of a Signal during one simulator timestep:
     # 0) at most one set operator (optional)
     # 1) any number of increments
@@ -424,13 +377,14 @@ class Operator(object):
                     np.zeros(
                         sig.base.shape,
                         dtype=sig.base.dtype,
-                        ) + getattr(sig.base, 'value', 0))
+                    ) + getattr(sig.base, 'value', 0))
 
 
 class Reset(Operator):
     """
     Assign a constant value to a Signal.
     """
+
     def __init__(self, dst, value=0):
         self.dst = dst
         self.value = float(value)
@@ -453,6 +407,7 @@ class Copy(Operator):
     """
     Assign the value of one signal to another
     """
+
     def __init__(self, dst, src, as_update=False, tag=None):
         self.dst = dst
         self.src = src
@@ -507,6 +462,7 @@ class DotInc(Operator):
     """
     Increment signal Y by dot(A, X)
     """
+
     def __init__(self, A, X, Y, tag=None):
         self.A = A
         self.X = X
@@ -538,6 +494,7 @@ class ProdUpdate(Operator):
     """
     Sets Y <- dot(A, X) + B * Y
     """
+
     def __init__(self, A, X, B, Y, tag=None):
         self.A = A
         self.X = X
