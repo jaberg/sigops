@@ -246,9 +246,9 @@ class Simulator(object):
         """
         return np.asarray(self.probe_outputs[probe])
 
-    def time(self, dt=None):
+    def trange(self, dt=None):
         dt = self.dt if dt is None else dt
         last_t = self._sigdict['__time__'] - self.dt
         n_steps = self.n_steps if dt is None else int(
-            self.n_steps / (dt / self.model.dt))
+            self.n_steps / (dt / self.dt))
         return np.linspace(0, last_t, n_steps)
