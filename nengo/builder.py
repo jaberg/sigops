@@ -363,8 +363,6 @@ class Operator(object):
     # (b) to use sets and updates on partly overlapping views of the same
     #     memory.
     #
-
-
     # N.B. It is done on purpose that there are no default values for
     # reads, sets, incs, and updates.
     #
@@ -387,6 +385,7 @@ class Operator(object):
         by any other operator.
         """
         return self._sets
+
     @sets.setter
     def sets(self, val):
         self._sets = val
