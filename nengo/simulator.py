@@ -13,7 +13,6 @@ from collections import defaultdict
 import networkx as nx
 import numpy as np
 
-
 logger = logging.getLogger(__name__)
 
 
