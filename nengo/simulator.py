@@ -9,12 +9,9 @@ from __future__ import print_function
 import logging
 import itertools
 from collections import defaultdict
-import time
 
 import networkx as nx
 import numpy as np
-
-from . import builder
 
 logger = logging.getLogger(__name__)
 
