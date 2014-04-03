@@ -1,15 +1,5 @@
 import numpy as np
 
-"""
-Set assert_named_signals True to raise an Exception
-if model.signal is used to create a signal with no name.
-
-This can help to identify code that's creating un-named signals,
-if you are trying to track down mystery signals that are showing
-up in a model.
-"""
-assert_named_signals = False
-
 
 class ShapeMismatch(ValueError):
     pass
@@ -275,13 +265,20 @@ class SignalView(object):
 
 
 class Signal(SignalView):
-    """Interpretable, vector-valued quantity within NEF"""
+    """Interpretable, vector-valued quantity within Nengo"""
+
+    # Set assert_named_signals True to raise an Exception
+    # if model.signal is used to create a signal with no name.
+    # This can help to identify code that's creating un-named signals,
+    # if you are trying to track down mystery signals that are showing
+    # up in a model.
+    assert_named_signals = False
 
     def __init__(self, value, name=None):
         self.value = np.asarray(value, dtype=np.float64)
         if name is not None:
             self._name = name
-        if assert_named_signals:
+        if Signal.assert_named_signals:
             assert name
 
     def __str__(self):
@@ -321,31 +318,30 @@ class Signal(SignalView):
 
 
 class Operator(object):
-    """
-    Base class for operator instances understood by the reference simulator.
-    """
+    """Base class for operator instances understood by nengo.Simulator.
 
-    # The lifetime of a Signal during one simulator timestep:
-    # 0) at most one set operator (optional)
-    # 1) any number of increments
-    # 2) any number of reads
-    # 3) at most one update
-    #
-    # A signal that is only read can be considered a "constant"
-    #
-    # A signal that is both set *and* updated can be a problem: since
-    # reads must come after the set, and the set will destroy
-    # whatever were the contents of the update, it can be the case
-    # that the update is completely hidden and rendered irrelevant.
-    # There are however at least two reasons to use both a set and an update:
-    # (a) to use a signal as scratch space (updating means destroying it)
-    # (b) to use sets and updates on partly overlapping views of the same
-    #     memory.
-    #
-    # N.B. It is done on purpose that there are no default values for
-    # reads, sets, incs, and updates.
-    #
-    # Each operator should explicitly set each of these properties.
+    The lifetime of a Signal during one simulator timestep:
+    0) at most one set operator (optional)
+    1) any number of increments
+    2) any number of reads
+    3) at most one update
+
+    A signal that is only read can be considered a "constant".
+
+    A signal that is both set *and* updated can be a problem:
+    since reads must come after the set, and the set will destroy
+    whatever were the contents of the update, it can be the case
+    that the update is completely hidden and rendered irrelevant.
+    There are however at least two reasons to use both a set and an update:
+    (a) to use a signal as scratch space (updating means destroying it)
+    (b) to use sets and updates on partly overlapping views of the same
+        memory.
+
+    N.B.: It is done on purpose that there are no default values for
+    reads, sets, incs, and updates.
+
+    Each operator should explicitly set each of these properties.
+    """
 
     @property
     def reads(self):
@@ -400,7 +396,8 @@ class Operator(object):
         return self.reads + self.sets + self.incs + self.updates
 
     def init_signals(self, signals, dt):
-        """
+        """Initialize simulator.signals
+
         Install any buffers into the signals view that
         this operator will need. Classes for nonlinearities
         that use extra buffers should create them here.
@@ -415,9 +412,7 @@ class Operator(object):
 
 
 class Reset(Operator):
-    """
-    Assign a constant value to a Signal.
-    """
+    """Assign a constant value to a Signal."""
 
     def __init__(self, dst, value=0):
         self.dst = dst
@@ -441,9 +436,7 @@ class Reset(Operator):
 
 
 class Copy(Operator):
-    """
-    Assign the value of one signal to another
-    """
+    """Assign the value of one signal to another."""
 
     def __init__(self, dst, src, as_update=False, tag=None):
         self.dst = dst
@@ -460,9 +453,9 @@ class Copy(Operator):
         return 'Copy(%s -> %s, as_update=%s)' % (
             str(self.src), str(self.dst), self.as_update)
 
-    def make_step(self, dct, dt):
-        dst = dct[self.dst]
-        src = dct[self.src]
+    def make_step(self, signals, dt):
+        dst = signals[self.dst]
+        src = signals[self.src]
 
         def step():
             dst[...] = src
@@ -473,7 +466,6 @@ def reshape_dot(A, X, Y, tag=None):
     """Checks if the dot product needs to be reshaped.
 
     Also does a bunch of error checking based on the shapes of A and X.
-
     """
     badshape = False
     ashape = (1,) if A.shape == () else A.shape
@@ -498,9 +490,7 @@ def reshape_dot(A, X, Y, tag=None):
 
 
 class DotInc(Operator):
-    """
-    Increment signal Y by dot(A, X)
-    """
+    """Increment signal Y by dot(A, X)"""
 
     def __init__(self, A, X, Y, tag=None):
         self.A = A
@@ -517,10 +507,10 @@ class DotInc(Operator):
         return 'DotInc(%s, %s -> %s "%s")' % (
             str(self.A), str(self.X), str(self.Y), self.tag)
 
-    def make_step(self, dct, dt):
-        X = dct[self.X]
-        A = dct[self.A]
-        Y = dct[self.Y]
+    def make_step(self, signals, dt):
+        X = signals[self.X]
+        A = signals[self.A]
+        Y = signals[self.Y]
         reshape = reshape_dot(A, X, Y, self.tag)
 
         def step():
@@ -532,9 +522,7 @@ class DotInc(Operator):
 
 
 class ProdUpdate(Operator):
-    """
-    Sets Y <- dot(A, X) + B * Y
-    """
+    """Sets Y <- dot(A, X) + B * Y"""
 
     def __init__(self, A, X, B, Y, tag=None):
         self.A = A
@@ -552,11 +540,11 @@ class ProdUpdate(Operator):
         return 'ProdUpdate(%s, %s, %s, -> %s "%s")' % (
             str(self.A), str(self.X), str(self.B), str(self.Y), self.tag)
 
-    def make_step(self, dct, dt):
-        X = dct[self.X]
-        A = dct[self.A]
-        Y = dct[self.Y]
-        B = dct[self.B]
+    def make_step(self, signals, dt):
+        X = signals[self.X]
+        A = signals[self.A]
+        Y = signals[self.Y]
+        B = signals[self.B]
         reshape = reshape_dot(A, X, Y, self.tag)
 
         def step():
