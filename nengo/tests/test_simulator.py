@@ -124,6 +124,16 @@ class TestSimulator(unittest.TestCase):
             self.assertTrue("%s %s" % (repr(k), repr(signaldict[k]))
                             in str(signaldict))
 
+    def test_signal(self):
+        # Make sure assert_named_signals works
+        Signal(np.array(0.))
+        Signal.assert_named_signals = True
+        with self.assertRaises(AssertionError):
+            Signal(np.array(0.))
+
+        # So that other tests that build signals don't fail...
+        Signal.assert_named_signals = False
+
 
 if __name__ == "__main__":
     unittest.main()
