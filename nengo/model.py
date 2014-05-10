@@ -4,14 +4,11 @@ import pickle
 import os.path
 import numpy as np
 
-from . import objects
-from . import context
-
 
 logger = logging.getLogger(__name__)
 
 
-class Model(object, context.Context):
+class Model(object):
 
     def __init__(self, label="Model", seed=None):
         self.objs = []
@@ -22,18 +19,6 @@ class Model(object, context.Context):
         self.seed = seed
 
         self._rng = None
-
-        # Some automatic stuff
-        with self:
-            self.t = objects.Node(label='t', output=0)
-            self.steps = objects.Node(label='steps', output=0)
-
-            # Automatically probe time
-            self.t_probe = objects.Probe(self.t, 'output')
-
-        #make this the default context if one isn't already set
-        if context.current() is None:
-            context.push(self)
 
     def __str__(self):
         return "Model: " + self.label
