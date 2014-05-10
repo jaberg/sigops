@@ -213,30 +213,8 @@ class Model(object):
             sample_every = self.dt
 
         if isinstance(target, core.Signal):
-            c = None
-            if filter is not None and filter > self.dt:
-                p = objects.Probe(target.name, target.n, sample_every)
-                c = self.connect(target, p, filter=filter, dt=self.dt)
-            else:
-                p = objects.RawProbe(target, sample_every)
-        elif isinstance(target, str):
-            s = target.split('.')
-            if len(s) > 1:
-                obj = self.get(s[:-2])
-                p, c = obj.probe(s[-1], sample_every, filter, self.dt)
-            else:
-                obj = self.get(target)
-                p, c = obj.probe(sample_every=sample_every,
-                                 filter=filter, dt=self.dt)
-        elif hasattr(target, 'probe'):
-            p, c = target.probe(sample_every=sample_every,
-                                filter=filter, dt=self.dt)
-        else:
-            raise TypeError("Type " + target.__class__.__name__ + " "
-                            "has no probe function.")
+            p = core.Probe(target, sample_every)
 
-        self.probed[target] = p.probe
+        self.probed[target] = p
         self.add(p)
-        if c is not None:
-            self.add(c)
         return p
