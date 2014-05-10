@@ -11,7 +11,6 @@ import time
 import networkx as nx
 import numpy as np
 
-import nengo
 from .builder import Builder, SimulatorProbe
 
 logger = logging.getLogger(__name__)
@@ -228,9 +227,6 @@ class Simulator(object):
         data : ndarray
             TODO: what are the dimensions?
         """
-        if isinstance(probe, nengo.Probe):
-            #then map it to the simulator probe
-            probe = self.model.probemap[probe]
         return np.asarray(self.probe_outputs[probe])
 
     def step(self):
