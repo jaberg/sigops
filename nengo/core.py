@@ -384,14 +384,7 @@ class Transform(object):
         model.signals.append(self.alpha_signal)
         dst = model._get_output_view(self.outsig)
 
-        # XXX: Complicated lookup still necessary?
-        if self.insig in model._decoder_outputs:
-            insig = model._decoder_outputs[self.insig]
-        elif self.insig.base in model._decoder_outputs:
-            insig = self.insig.view_like_self_of(
-                model._decoder_outputs[self.insig.base])
-        else:
-            insig = self.insig
+        insig = self.insig
 
         model._operators.append(
             sim.DotInc(self.alpha_signal, insig, dst,

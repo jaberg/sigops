@@ -29,9 +29,6 @@ class Model(object):
         # -- map from signals to shadows for time t + 1
         self._next_signals = {}
 
-        # -- map from signals to shadows used as decoder outputs
-        self._decoder_outputs = {}
-
         self.objs = {}
         self.aliases = {}
         self.probed = {}
