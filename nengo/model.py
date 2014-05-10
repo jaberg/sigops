@@ -89,9 +89,6 @@ class Model(object):
         }
 
         d['signals'] = [sig.to_json() for sig in self.signals]
-        d['nonlinearities'] = [nl.to_json() for nl in self.nonlinearities]
-        d['encoders'] = [enc.to_json() for enc in self.encoders]
-        d['decoders'] = [dec.to_json() for dec in self.decoders]
         d['transforms'] = [trans.to_json() for trans in self.transforms]
         d['filters'] = [filt.to_json() for filt in self.filters]
         d['probes'] = [pr.to_json() for pr in self.probes]
