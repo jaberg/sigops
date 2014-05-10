@@ -32,7 +32,6 @@ class Model(object):
         self.aliases = {}
         self.probed = {}
         self.data = {}
-        self.connections = []
         self.signal_probes = []
 
         self.name = name
@@ -170,14 +169,6 @@ class Model(object):
             if not isinstance(self.probed[target], core.Probe):
                 self.probed[target] = self.probed[target].probe
 
-        # 3. Then connections
-        logger.info("Building connections")
-        for o in all_objs:
-            for c in o.connections_out:
-                c.build(model=modelcopy, dt=dt)
-        for c in self.connections:
-            c.build(model=modelcopy, dt=dt)
-
         modelcopy.built = True
         logger.info("Finished. New model is %s.", modelcopy.name)
         return modelcopy
@@ -223,17 +214,8 @@ class Model(object):
 
         if 'core' in obj.__module__:
             obj.add_to_model(self)
-        elif hasattr(obj, 'connections_out'):
-            self.objs[obj.name] = obj
-        elif hasattr(obj, 'connections_in'):
-            self.signal_probes.append(obj)
-        elif hasattr(obj, 'probes'):
-            self.connections.append(obj)
         else:
-            raise TypeError("Object not recognized as a Nengo object. "
-                            "Objects should have connections_in and "
-                            "connections_out lists; connections should "
-                            "have a probes dictionary.")
+            raise TypeError("Object not recognized as a Nengo object. ")
 
         return obj
 
