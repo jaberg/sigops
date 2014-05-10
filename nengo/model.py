@@ -7,7 +7,6 @@ import numpy as np
 
 from . import core
 from . import objects
-from . import probes
 from . import simulator
 
 
