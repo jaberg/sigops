@@ -7,15 +7,11 @@ import numpy as np
 
 from nengo import Model
 from nengo.objects import Filter, Signal
-
-from helpers import simulates, SimulatesMetaclass
+from nengo.simulator import Simulator
 
 
 class TestSimulator(unittest.TestCase):
-    __metaclass__ = SimulatesMetaclass
-
-    @simulates
-    def test_signal_indexing_1(self, simulator):
+    def test_signal_indexing_1(self):
         m = Model("test_signal_indexing_1")
         one = m.add(Signal(1))
         two = m.add(Signal(2))
@@ -25,7 +21,7 @@ class TestSimulator(unittest.TestCase):
         m.add(Filter(2.0, three[1:], two))
         m.add(Filter([[0, 0, 1], [0, 1, 0], [1, 0, 0]], three, three))
 
-        sim = simulator(m)
+        sim = Simulator(m)
         sim.signals[three] = np.asarray([1, 2, 3])
         sim.step()
         assert np.all(sim.signals[one] == 1)
