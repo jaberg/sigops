@@ -433,59 +433,6 @@ class Simulator(BaseSimulator):
         operators = []
         with collect_operators_into(operators):
 
-            # -- reset nonlinearities: bias -> input_current
-            input_currents = {}
-            for nl in model.nonlinearities:
-                if is_view(nl.input_signal):
-                    raise NotImplementedError('need inc instead of copy')
-                input_current = core.Signal(nl.input_signal.n,
-                                       name=nl.input_signal.name + '-incur')
-                signals[input_current] = np.zeros(nl.input_signal.n)
-                input_currents[nl.input_signal] = input_current
-                Copy(input_current, nl.bias_signal)
-
-            # -- encoders: signals -> input current
-            #    (N.B. this includes neuron -> neuron connections)
-            for enc in model.encoders:
-                DotInc(enc.sig,
-                       enc.weights_signal,
-                       input_currents[enc.pop.input_signal],
-                       xT=True)
-
-            # -- population dynamics
-            output_currents = {}
-            for nl in model.nonlinearities:
-                output_current = core.Signal(nl.output_signal.n,
-                                       name=nl.output_signal.name + '-outcur')
-                signals[output_current] = np.zeros(nl.output_signal.n)
-                output_currents[nl.output_signal] = output_current
-                nl_cls = registry[nl.__class__]
-                nl_op = nl_cls(output=output_current,
-                       J=input_currents[nl.input_signal],
-                       nl=nl)
-                nl_op.init_signals(signals, model.dt)
-
-            # -- decoders: population output -> signals_tmp
-            decoder_outputs = {}
-            for dec in model.decoders:
-                if dec.sig.base not in decoder_outputs:
-                    sigbase = core.Signal(dec.sig.base.n,
-                                     name=dec.sig.name + '-decbase')
-                    signals[sigbase] = np.zeros(sigbase.n)
-                    decoder_outputs[dec.sig.base] = sigbase
-                    Reset(sigbase)
-                else:
-                    sigbase = decoder_outputs[dec.sig.base]
-                if is_view(dec.sig):
-                    dec_sig = dec.sig.view_like_self_of(sigbase)
-                else:
-                    dec_sig = sigbase
-                decoder_outputs[dec.sig] = dec_sig
-                DotInc(output_currents[dec.pop.output_signal],
-                       dec.weights_signal,
-                       dec_sig,
-                       xT=True)
-
             # -- set up output buffers for filters and transforms
             output_stuff = {}
             for filt in model.filters:
