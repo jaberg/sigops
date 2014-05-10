@@ -144,13 +144,6 @@ class Constant(Signal):
         self.value = value
 
 
-class Nonlinearity(object):
-    def __init__(self, input_signal, output_signal, bias_signal):
-        self.input_signal = input_signal
-        self.output_signal = output_signal
-        self.bias_signal = bias_signal
-
-
 class Transform(object):
     """A linear transform from a decoded signal to the signals buffer"""
     def __init__(self, alpha, insig, outsig):
