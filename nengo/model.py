@@ -186,12 +186,6 @@ class Model(object):
                 target, probe_type = s[0], s[1]
         obj = self.get(target)
 
-        if type(obj) == Ensemble:
-            obj_s = self.get_string(target)
-            p = obj.probe(probe_type, sample_every, self)
-            self.probed[obj_s] = p
-            return p
-
         if type(obj) != Signal:
             obj = obj.signal
 
