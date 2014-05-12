@@ -17,7 +17,7 @@ setup(
     version="0.1.0",
     author="",
     author_email="",
-    packages=['nengo', 'nengo.tests'],
+    packages=['sigops', 'sigops.tests'],
     scripts=[],
     url="",
     license="BSD",
