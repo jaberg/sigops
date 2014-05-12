@@ -5,8 +5,8 @@ except ImportError:
 
 import numpy as np
 
-import sigops.simulator as simulator
-from sigops.sigops import Signal, ProdUpdate, Reset, DotInc, Copy
+from sigops import Signal, ProdUpdate, Reset, DotInc, Copy, Simulator
+from sigops.simulator import SignalDict
 
 
 class TestSimulator(unittest.TestCase):
@@ -20,7 +20,7 @@ class TestSimulator(unittest.TestCase):
         operators = [ProdUpdate(zero, zero, one, five),
                      ProdUpdate(zeroarray, one, one, array)]
 
-        sim = simulator.Simulator(operators)
+        sim = Simulator(operators)
         self.assertEqual(0, sim.signals[zero][0])
         self.assertEqual(1, sim.signals[one][0])
         self.assertEqual(5.0, sim.signals[five][0])
@@ -34,7 +34,7 @@ class TestSimulator(unittest.TestCase):
             np.array([1, 2, 3]) == sim.signals[array]))
 
     def test_steps(self):
-        sim = simulator.Simulator([])
+        sim = Simulator([])
         self.assertEqual(0, sim.n_steps)
         sim.step()
         self.assertEqual(1, sim.n_steps)
@@ -55,7 +55,7 @@ class TestSimulator(unittest.TestCase):
             Copy(src=tmp, dst=three, as_update=True),
         ]
 
-        sim = simulator.Simulator(operators)
+        sim = Simulator(operators)
         sim.signals[three] = np.asarray([1, 2, 3])
         sim.step()
         self.assertTrue(np.all(sim.signals[one] == 1))
@@ -69,7 +69,7 @@ class TestSimulator(unittest.TestCase):
 
     def test_signaldict(self):
         """Tests simulator.SignalDict's dict overrides."""
-        signaldict = simulator.SignalDict()
+        signaldict = SignalDict()
 
         scalar = Signal(1)
 
