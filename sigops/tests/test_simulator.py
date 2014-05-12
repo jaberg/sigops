@@ -5,8 +5,8 @@ except ImportError:
 
 import numpy as np
 
-import nengo.simulator as simulator
-from nengo.base import Signal, ProdUpdate, Reset, DotInc, Copy
+import sigops.simulator as simulator
+from sigops.sigops import Signal, ProdUpdate, Reset, DotInc, Copy
 
 
 class TestSimulator(unittest.TestCase):

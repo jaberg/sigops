@@ -1,9 +1,3 @@
-"""
-Simulator.py
-
-Reference simulator for nengo models.
-"""
-
 from __future__ import print_function
 
 import logging
