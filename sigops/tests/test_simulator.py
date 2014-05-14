@@ -5,8 +5,8 @@ except ImportError:
 
 import numpy as np
 
-from sigops import Signal, ProdUpdate, Reset, DotInc, Copy, Simulator
-from sigops.simulator import SignalDict
+from sigops import Signal, SignalDict, Simulator
+from sigops import ProdUpdate, Reset, DotInc, Copy
 
 
 class TestSimulator(unittest.TestCase):
