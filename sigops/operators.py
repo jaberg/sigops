@@ -18,7 +18,7 @@ class Reset(Operator):
     def __str__(self):
         return 'Reset(%s)' % str(self.dst)
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals):
         target = signals[self.dst]
         value = self.value
 
@@ -45,7 +45,7 @@ class Copy(Operator):
         return 'Copy(%s -> %s, as_update=%s)' % (
             str(self.src), str(self.dst), self.as_update)
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals):
         dst = signals[self.dst]
         src = signals[self.src]
 
@@ -99,7 +99,7 @@ class DotInc(Operator):
         return 'DotInc(%s, %s -> %s "%s")' % (
             str(self.A), str(self.X), str(self.Y), self.tag)
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals):
         X = signals[self.X]
         A = signals[self.A]
         Y = signals[self.Y]
@@ -132,7 +132,7 @@ class ProdUpdate(Operator):
         return 'ProdUpdate(%s, %s, %s, -> %s "%s")' % (
             str(self.A), str(self.X), str(self.B), str(self.Y), self.tag)
 
-    def make_step(self, signals, dt):
+    def make_step(self, signals):
         X = signals[self.X]
         A = signals[self.A]
         Y = signals[self.Y]

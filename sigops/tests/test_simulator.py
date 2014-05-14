@@ -73,24 +73,21 @@ class TestSimulator(unittest.TestCase):
 
         scalar = Signal(1)
 
-        # Both __getitem__ and __setitem__ raise KeyError
         with self.assertRaises(KeyError):
             signaldict[scalar]
-        with self.assertRaises(KeyError):
-            signaldict[scalar] = np.array(1.)
 
-        signaldict.init(scalar, scalar.value)
+        signaldict[scalar] = scalar.value
         self.assertTrue(np.allclose(signaldict[scalar], np.array(1.)))
         # __getitem__ handles scalars
         self.assertTrue(signaldict[scalar].shape == ())
 
         one_d = Signal([1])
-        signaldict.init(one_d, one_d.value)
+        signaldict[one_d] = one_d.value
         self.assertTrue(np.allclose(signaldict[one_d], np.array([1.])))
         self.assertTrue(signaldict[one_d].shape == (1,))
 
         two_d = Signal([[1], [1]])
-        signaldict.init(two_d, two_d.value)
+        signaldict[two_d] = two_d.value
         self.assertTrue(np.allclose(signaldict[two_d], np.array([[1.], [1.]])))
         self.assertTrue(signaldict[two_d].shape == (2, 1))
 
